@@ -18,8 +18,14 @@ int main(int argc, char**argv)
    int n;
    char sendline[1000];
    char recvline[1000];
-
    Bank *bank = bank_create();
+   
+   FILE *bfile;
+   bfile =fopen(argv[1], "w+");
+   if(bfile == NULL) {
+    printf("Error opening bank initialization file\n");
+    return 64;
+   }
 
    printf("%s", prompt);
    fflush(stdout);
