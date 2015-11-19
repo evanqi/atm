@@ -27,7 +27,7 @@ int main(int argc, char *argv[]) {
   atmfile = fopen(atm, "w+");
 
   if(!bankfile || !atmfile) {
-    perror("Error creating initialization files\n");
+    printf("Error creating initialization files\n");
     exit(64);
   }
 
