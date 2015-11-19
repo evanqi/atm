@@ -8,7 +8,7 @@ int main(int argc, char *argv[]) {
   FILE *bankfile, *atmfile;
   if(argc != 2) {
     printf("Usage: init <filename>");
-    return 62;
+    exit(62);
   }
 
   bank = (char *)malloc((strlen(argv[1]) + 5)*sizeof(char));
