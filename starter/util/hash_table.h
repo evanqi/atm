@@ -10,8 +10,6 @@
 
 #include "list.h"
 #include <stdint.h>
-#include <stdlib.h>
-#include <string.h>
 
 typedef struct _HashTable
 {

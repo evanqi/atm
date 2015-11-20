@@ -13,7 +13,7 @@
 typedef struct _ListElem
 {
     char *key;
-    char *val;
+    void *val;
     struct _ListElem *next;
 } ListElem;
 
