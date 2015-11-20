@@ -3,6 +3,15 @@
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <ctype.h>
+
+static const char BEGIN[] = "begin-session";
+static const char WITHDRAW[] = "withdraw";
+static const char BALANCE[] = "balance";
+static const char END[] = "end-session";
+static const int ATM_ACTION_MAX = 14;
+static const int USERNAME_ACTION_MAX = 250;
+
 
 ATM* atm_create()
 {
@@ -29,7 +38,8 @@ ATM* atm_create()
 
     // Set up the protocol state
     // TODO set up more, as needed
-
+    atm->session = 0;
+    atm->cur_user = (char *)malloc(USERNAME_ACTION_MAX*sizeof(char));
     return atm;
 }
 
@@ -55,8 +65,68 @@ ssize_t atm_recv(ATM *atm, char *data, size_t max_data_len)
     return recvfrom(atm->sockfd, data, max_data_len, 0, NULL, NULL);
 }
 
+int is_valid_username(char *username) {
+  int i;
+
+  for(i=0; i<strlen(username); i++) {
+    if(!((username[i] <= 'Z' && username[i] >= 'A')
+          || (username[i] <= 'z' && username[i] >= 'a'))) {
+        return 0;
+    }
+  }
+
+  return 1;
+}
+
 void atm_process_command(ATM *atm, char *command)
 {
+  char username[USERNAME_ACTION_MAX], action[ATM_ACTION_MAX];
+  int input_pin;
+
+  //TODO: check length of action and username in sscanf
+  sscanf(command, "%s %s", action, username);
+
+  if(strcmp(action, BEGIN) == 0) {
+    printf("begin: %s\n", action);
+    if(atm->session) {
+      printf("A user is already logged in\n");
+      return;
+    }
+    if(!is_valid_username(username)) {
+      printf("Usage: begin-session <user-name>\n");
+      return;
+    }
+
+    //TODO: validate username with bank
+    
+    printf("PIN? ");
+    scanf("%d", &input_pin);
+    printf("%d", input_pin);
+
+    //TODO: validate pin with bank
+    
+    
+  }
+  else if(strcmp(action, WITHDRAW) == 0) {
+    printf("withdraw: %s\n", action);
+
+  }
+  else if(strcmp(action, BALANCE) == 0) {
+    printf("balance: %s\n", action);
+
+  }
+  else if(strcmp(action, END) == 0) {
+    printf("end: %s\n", action);
+
+  }
+  else if(strcmp(action, "\n") == 0) {
+    return;
+  }
+  else {
+    printf("Invalid command\n");
+    return;
+  }
+
     // TODO: Implement the ATM's side of the ATM-bank protocol
 
 	/*
@@ -74,4 +144,6 @@ void atm_process_command(ATM *atm, char *command)
     recvline[n]=0;
     fputs(recvline,stdout);
 	*/
+
+
 }

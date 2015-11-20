@@ -10,9 +10,21 @@
 
 static const char prompt[] = "ATM: ";
 
-int main()
+int main(int argc, char *argv[])
 {
     char user_input[1000];
+    FILE *atm_file;
+
+    if(argc != 2) {
+      printf("Usage: atm <filename>\n");
+      exit(62);
+    }
+
+    atm_file = fopen(argv[1], "r");
+    if(!atm_file) {
+      printf("Error opening ATM initialization file\n");
+      exit(64);
+    }
 
     ATM *atm = atm_create();
 
