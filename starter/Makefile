@@ -3,11 +3,11 @@ CFLAGS = -fno-stack-protector -Wall -Iutil -Iatm -Ibank -Irouter -I.
 
 all: bin/atm bin/bank bin/router
 
-bin/atm : atm/atm-main.c atm/atm.c
-	${CC} ${CFLAGS} atm/atm.c atm/atm-main.c -o bin/atm
+bin/atm : atm/atm-main.c atm/atm.c util/list.c util/hash_table.c
+	${CC} ${CFLAGS} atm/atm.c atm/atm-main.c -o bin/atm  util/list.c util/hash_table.c
 
-bin/bank : bank/bank-main.c bank/bank.c
-	${CC} ${CFLAGS} bank/bank.c bank/bank-main.c -o bin/bank
+bin/bank : bank/bank-main.c bank/bank.c util/list.c util/hash_table.c
+	${CC} ${CFLAGS} bank/bank.c bank/bank-main.c -o bin/bank util/list.c util/hash_table.c
 
 bin/router : router/router-main.c router/router.c
 	${CC} ${CFLAGS} router/router.c router/router-main.c -o bin/router
