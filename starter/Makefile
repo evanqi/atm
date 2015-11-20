@@ -1,7 +1,7 @@
 CC = gcc
-CFLAGS = -fno-stack-protector -Wall -Iutil -Iatm -Ibank -Irouter -I.
+CFLAGS = -fno-stack-protector -Wall -Iutil -g -Iatm -Ibank -Irouter -I.
 
-all: bin/atm bin/bank bin/router bin/init
+all: bin/atm bin/bank bin/router bin/init test
 
 bin/atm : atm/atm-main.c atm/atm.c util/list.c util/hash_table.c
 	${CC} ${CFLAGS} atm/atm.c atm/atm-main.c -o bin/atm  util/list.c util/hash_table.c

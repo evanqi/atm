@@ -19,10 +19,9 @@ int main(int argc, char**argv)
    char sendline[1000];
    char recvline[1000];
    Bank *bank = bank_create();
-   
-   FILE *bfile;
-   bfile =fopen(argv[1], "w+");
-   if(bfile == NULL) {
+  
+   bank->init =fopen(argv[1], "r");
+   if(bank->init == NULL) {
     printf("Error opening bank initialization file\n");
     return 64;
    }
@@ -52,5 +51,6 @@ int main(int argc, char**argv)
        }
    }
 
+   bank_free(bank);
    return EXIT_SUCCESS;
 }

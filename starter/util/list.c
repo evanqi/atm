@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <assert.h>
 #include "list.h"
+#include <stdio.h>
 
 List* list_create()
 {
@@ -20,6 +21,8 @@ void list_free(List *list)
         while(curr != NULL)
         {
             next = curr->next;
+            free(curr->key);
+            free(curr->val);
             free(curr);
             curr = next;
         }
@@ -33,10 +36,14 @@ void* list_find(List *list, const char *key)
         return NULL;
 
     ListElem *curr = list->head;
+    if(curr != NULL)
+
     while(curr != NULL)
     {
         if(strcmp(curr->key, key) == 0)
+        {
             return curr->val;
+        }
         curr = curr->next;
     }
 
@@ -47,7 +54,6 @@ void list_add(List *list, char *key, void *val)
 {
     // Allow duplicates
     // assert(list_find(list, key) == NULL);
-
     ListElem *elem = (ListElem*) malloc(sizeof(ListElem));
     elem->key = key;
     elem->val = val;
@@ -56,8 +62,10 @@ void list_add(List *list, char *key, void *val)
     if(list->tail == NULL)
         list->head = list->tail = elem;
     else
+    {
         list->tail->next = elem;
-
+        
+    }
     list->size++;
 }
 
@@ -84,6 +92,8 @@ void list_del(List *list, const char *key)
 
             list->size--;
 
+            free(curr->key);
+            free(curr->val);
             free(curr);
             return;
         }

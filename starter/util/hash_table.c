@@ -1,6 +1,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 #include "hash_table.h"
 
 HashTable* hash_table_create(uint32_t num_bins)
@@ -86,7 +87,6 @@ uint32_t hash(const char * data, int len)
 void hash_table_add(HashTable *ht, char *key, void *val)
 {
     uint32_t idx = hash(key, strlen(key)) % ht->num_bins;
-
     // Do not permit duplicates
     if(list_find(ht->bins[idx], key) == NULL)
     {
