@@ -302,7 +302,7 @@ void bank_process_remote_command(Bank *bank, char *command, size_t len)
 	*/
 
     // ASSUME everything valid (checked in atm)
-    char comm[2]; // w = withdrawal, u = user exists?, b = balance, p = verify pin
+    char comm[2]; // w = withdrawal, u = user exists?, b = balance, p = user pin
     char name[MAX_NAME_SIZE];
     char pin[MAX_PIN_SIZE];
     char amt[MAX_AMT_SIZE];
@@ -385,6 +385,11 @@ void bank_process_remote_command(Bank *bank, char *command, size_t len)
     }    
 }
 
+// 122 = z
+// 65 = A
+// 90 = Z
+// 97 = a
+// 91 ~ 96 = not alpha
 int check_username(char *username) 
 {
     if(username == NULL)
@@ -392,10 +397,8 @@ int check_username(char *username)
     int u, s = strlen(username);
     for(u = 0; u < s; u++)
     {
-        if(username[u] > 122 || username[u] < 65)
-            return 0;
-        else if(username[u] > 90 && username[u] < 97)
-            return 0;
+	if(!isalpha(username[u]))
+	    return 0;
     }
     return 1;
 }
@@ -410,10 +413,9 @@ int check_pin(char *pin)
     }
 
     long p = strtol(pin, NULL, 10);
-    if (p > 9999 || p < 0){
+    if (p < 0){
         return 0;
     }
-
     return 1;
 }
 
@@ -427,7 +429,7 @@ int check_bal(char *bal)
     }
 
     long balance = strtol(bal, NULL, 10);
-    if(balance > INT_MAX || balance < 0)
+    if(balance < 0 || balance > INT_MAX)
         return 0;
     return 1;
 }
