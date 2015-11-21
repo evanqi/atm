@@ -34,7 +34,11 @@ int main(int argc, char *argv[])
     while (fgets(user_input, 10000,stdin) != NULL)
     {
         atm_process_command(atm, user_input);
-        printf("%s", prompt);
+        if(atm->session) {
+          printf("ATM (<%s>): ", atm->cur_user);
+        } else {
+          printf("%s", prompt);
+        }
         fflush(stdout);
     }
 	return EXIT_SUCCESS;

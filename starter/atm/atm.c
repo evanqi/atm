@@ -98,14 +98,22 @@ void atm_process_command(ATM *atm, char *command)
     }
 
     //TODO: validate username with bank
-    
+
     printf("PIN? ");
     scanf("%d", &input_pin);
     printf("%d", input_pin);
 
     //TODO: validate pin with bank
-    
-    
+    int flag = 1;
+    if(flag) {
+      printf("Authorized\n");
+      atm->session = 1;
+      atm->cur_user = (char *)malloc((strlen(username)+1)*sizeof(char));
+      strcpy(atm->cur_user, username);
+    }
+    else {
+      printf("No such user\n");
+    }
   }
   else if(strcmp(action, WITHDRAW) == 0) {
     printf("withdraw: %s\n", action);
