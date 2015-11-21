@@ -11,6 +11,8 @@
 #define MAX_NAME_SIZE 251
 #define MAX_MISC_SIZE 12
 #define MAX_LINE_SIZE 1001
+#define MAX_PIN_SIZE 5
+#define MAX_AMT_SIZE 11
 
 Bank* bank_create()
 {
@@ -81,7 +83,6 @@ void bank_process_local_command(Bank *bank, char *command, size_t len)
     char temp_misc[MAX_LINE_SIZE];
     char temp_misc_two[MAX_LINE_SIZE];
 
-
     if(strlen(command) >= MAX_LINE_SIZE)
     {
         printf("Invalid command\n");
@@ -89,6 +90,7 @@ void bank_process_local_command(Bank *bank, char *command, size_t len)
     }
 
     sscanf(command, "%s %s %s %s", temp_comm,temp_name,temp_misc,temp_misc_two);
+    
     if(strlen(temp_comm) < 1)
     {
         printf("Invalid command\n");
@@ -170,11 +172,9 @@ void bank_process_local_command(Bank *bank, char *command, size_t len)
         }
         fclose(card);
 
-        printf("pin: %s, balance: %s\n", misc, misc_two);
-        hash_table_add(bank->user_bal, name, misc_two);
-        hash_table_add(bank->user_pin, name, misc);
+        hash_table_add(bank->user_bal, name, misc_two); //username balance
+        hash_table_add(bank->user_pin, name, misc);	//username pin
 
-        printf("user's balance -> %s\n", (char*) hash_table_find(bank->user_bal, name));
         printf("Created user %s\n", name);
 
         return;
@@ -225,8 +225,6 @@ void bank_process_local_command(Bank *bank, char *command, size_t len)
         int amt = strtol(misc, NULL, 10);
         long new_bal = amt + curr_bal_int;  
 
-        printf("curr: %d new: %ld\n", curr_bal_int, new_bal);
-
         //checks if new_bal was capped
         if( new_bal > INT_MAX || ((new_bal == INT_MAX) && ((new_bal - amt) != curr_bal_int))){
             printf("Too rich for this program\n");
@@ -237,7 +235,7 @@ void bank_process_local_command(Bank *bank, char *command, size_t len)
 
         sprintf(new_bal_char, "%ld", new_bal);
         //update balance
-        // BELOW GIVES MALLOC ERRORS
+
         hash_table_del(bank->user_bal, name);
         hash_table_add(bank->user_bal, name, new_bal_char);
 
@@ -265,7 +263,7 @@ void bank_process_local_command(Bank *bank, char *command, size_t len)
             printf("Usage: balance <user-name>\n");
             return;
         }
-
+	
         char *curr_bal = (char *) hash_table_find(bank->user_bal, name);
         if(curr_bal == NULL)
         {
@@ -282,7 +280,6 @@ void bank_process_local_command(Bank *bank, char *command, size_t len)
         printf("Invalid command\n");
         return;
     }
-
 }
 
 void bank_process_remote_command(Bank *bank, char *command, size_t len)
@@ -303,6 +300,89 @@ void bank_process_remote_command(Bank *bank, char *command, size_t len)
     printf("Received the following:\n");
     fputs(command, stdout);
 	*/
+
+    // ASSUME everything valid (checked in atm)
+    char comm[2]; // w = withdrawal, u = user exists?, b = balance, p = verify pin
+    char name[MAX_NAME_SIZE];
+    char pin[MAX_PIN_SIZE];
+    char amt[MAX_AMT_SIZE];
+
+    sscanf(command, "%s %s %s %s", comm, name, pin, amt);
+
+    if(strcmp(comm, "u") == 0)
+    {
+	if(hash_table_find(bank->user_bal,name) == NULL)
+	{
+	    send_no(bank);
+	    return;
+	}
+	else
+	{
+	    send_yes(bank);
+	    return;
+	}
+    }
+    else if(strcmp(comm, "b") == 0)
+    {
+	if(hash_table_find(bank->user_bal, name) == NULL)
+	{
+	    send_no_user(bank);
+	    return;
+	}
+	char* balance = (char *)hash_table_find(bank->user_bal, name);
+	send_balance(bank, balance);
+	return;
+    }
+    else if(strcmp(comm, "p") == 0)
+    {
+	if(hash_table_find(bank->user_bal, name) == NULL)
+	{
+	    send_no_user(bank);
+	    return;
+	}
+
+	char* pin_from_hash = (char *) hash_table_find(bank->user_pin, name);
+	if(pin_from_hash == NULL)
+	{
+	    send_no_pin(bank);
+	    return;
+	}
+
+	if(strcmp(pin_from_hash, pin) == 0)
+	{
+	    send_yes(bank);
+	    return;
+	}
+	else
+	{
+	    send_no(bank);
+	    return;
+	}
+    }
+    else if(strcmp(comm, "w") == 0)
+    {
+	if(hash_table_find(bank->user_bal, name) == NULL)
+	{
+	    send_no_user(bank);
+	    return;
+	}
+
+	int amt_w = strtol(amt, NULL, 10);
+	int curr_amt = strtol((char *)hash_table_find(bank->user_bal, name), NULL, 10);
+	int new_amt = curr_amt - amt_w;
+	if(new_amt < 0)
+	{
+	    send_no_fund(bank);
+	    return;
+	}
+	char new_amt_char[MAX_AMT_SIZE];
+	sprintf(new_amt_char, "%d", new_amt);
+
+	hash_table_del(bank->user_bal, name);
+	hash_table_add(bank->user_bal, name,new_amt_char);
+	send_yes(bank);
+	return;
+    }    
 }
 
 int check_username(char *username) 
@@ -322,7 +402,6 @@ int check_username(char *username)
 
 int check_pin(char *pin)
 {
-    printf("pin: %s\n", pin);
     int b;
     for(b = 0; b < 4; b++)
     {
@@ -352,5 +431,37 @@ int check_bal(char *bal)
         return 0;
     return 1;
 }
+
+void send_no_fund(Bank *bank)
+{
+    bank_send(bank, "nofund", sizeof("nofund"));
+}
+
+void send_no(Bank *bank)
+{
+    bank_send(bank, "no", sizeof("no"));
+}
+
+void send_yes(Bank *bank)
+{
+    bank_send(bank, "yes", sizeof("yes"));
+}
+
+void send_no_user(Bank *bank)
+{
+    bank_send(bank, "nouser", sizeof("nouser"));
+}
+
+void send_no_pin(Bank *bank)
+{
+    bank_send(bank, "nopin", sizeof("nopin"));
+}
+
+void send_balance(Bank *bank, char *bal)
+{
+    bank_send(bank, bal, sizeof(bal));
+}
+
+
 
 
