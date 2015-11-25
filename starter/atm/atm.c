@@ -80,30 +80,46 @@ int is_valid_username(char *username) {
 
 void atm_process_command(ATM *atm, char *command)
 {
-  char username[USERNAME_ACTION_MAX], action[ATM_ACTION_MAX];
-  int input_pin;
+  char inbuf[USERNAME_ACTION_MAX], username[USERNAME_ACTION_MAX], action[ATM_ACTION_MAX];
+  char input_pin[5];
+  int pin = 0, amt;
 
   //TODO: check length of action and username in sscanf
-  sscanf(command, "%s %s", action, username);
+  sscanf(command, "%s %s", action, inbuf);
 
   if(strcmp(action, BEGIN) == 0) {
-    printf("begin: %s\n", action);
     if(atm->session) {
       printf("A user is already logged in\n");
       return;
     }
+    strcpy(username, inbuf);
     if(!is_valid_username(username)) {
       printf("Usage: begin-session <user-name>\n");
       return;
     }
 
     //TODO: validate username with bank
+    /* char recvline[10000]; */
+    /* int n; */
 
+    /* atm_send(atm, command, strlen(command)); */
+    /* n = atm_recv(atm,recvline,10000); */
+    /* recvline[n]=0; */
+    /* fputs(recvline,stdout); */
+
+
+    //TODO: better pin input validation
     printf("PIN? ");
-    scanf("%d", &input_pin);
-    printf("%d", input_pin);
+    scanf("%c%c%c%c", &input_pin[0], &input_pin[1], &input_pin[2], &input_pin[3]);
+    input_pin[4] = '\0';
+    pin = atoi(input_pin);
+    if(pin < 0 || pin > 9999) {
+      printf("Not authorized\n");
+      return;
+    }
 
     //TODO: validate pin with bank
+    
     int flag = 1;
     if(flag) {
       printf("Authorized\n");
@@ -116,16 +132,50 @@ void atm_process_command(ATM *atm, char *command)
     }
   }
   else if(strcmp(action, WITHDRAW) == 0) {
-    printf("withdraw: %s\n", action);
+    if(!session) {
+      printf("No user logged in\n");
+      return;
+    }
+    amt = atoi(inbuf);
+    if(amt < 0) {
+      printf("Usage: withdraw <amt>\n");
+      return;
+    }
 
+    //TODO: ask bank to withdraw money
+    
+    int flag = 1;
+    if(flag) {
+      printf("$%d dispensed\n", amt);
+    } else {
+      printf("Insufficient funds\n");
+    }
   }
   else if(strcmp(action, BALANCE) == 0) {
-    printf("balance: %s\n", action);
+    if(!session) {
+      printf("No user logged in\n");
+      return;
+    }
 
+    if(inbuf[0] != 0) {
+      printf("Usage: balance\n");
+      return;
+    }
+
+    //TODO: ask bank for balance
+    int balance = 0;
+    printf("$%d: balance\n", balance);
   }
   else if(strcmp(action, END) == 0) {
-    printf("end: %s\n", action);
+    if(!session) {
+      printf("No user logged in\n");
+      return;
+    }
 
+    session = 0;
+    free(atm->cur_user);
+    atm->cur_user = NULL;
+    printf("User logged out\n");
   }
   else if(strcmp(action, "\n") == 0) {
     return;
