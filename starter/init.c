@@ -7,7 +7,7 @@ int main(int argc, char *argv[]) {
   char *bank, *atm;
   FILE *bankfile, *atmfile;
   if(argc != 2) {
-    printf("Usage: init <filename>");
+    printf("Usage: init <filename>\n");
     exit(62);
   }
 

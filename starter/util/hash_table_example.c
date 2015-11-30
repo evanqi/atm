@@ -10,12 +10,12 @@ int main()
     hash_table_add(ht, "Alice", "123");
     hash_table_add(ht, "Bob", "345");
 
-    printf("Alice -> %s\n", hash_table_find(ht, "Alice"));
+    printf("Alice -> %s\n", (char *)hash_table_find(ht, "Alice"));
     hash_table_del(ht, "Alice");
     hash_table_add(ht, "Alice", "234");
-    printf("Alice -> %s\n", hash_table_find(ht, "Alice"));
-    printf("Bob -> %s\n", hash_table_find(ht, "Bob"));
-    printf("Charlie -> %s\n", (hash_table_find(ht, "Charlie") == NULL ? "Not Found" : "FAIL"));
+    printf("Alice -> %s\n", (char *)hash_table_find(ht, "Alice"));
+    printf("Bob -> %s\n", (char *)hash_table_find(ht, "Bob"));
+    printf("Charlie -> %s\n", ((char *)hash_table_find(ht, "Charlie") == NULL ? "Not Found" : "FAIL"));
 
     printf("Size: %d\n", hash_table_size(ht));
 

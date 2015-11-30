@@ -47,5 +47,11 @@ void bank_process_remote_command(Bank *bank, char *command, size_t len);
 int check_username(char *username);
 int check_pin(char *pin);
 int check_bal(char *bal);
+void send_no_fund(Bank *bank);
+void send_no(Bank *bank);
+void send_yes(Bank *bank);
+void send_no_user(Bank *bank);
+void send_no_pin(Bank *bank);
+void send_balance(Bank *bank, char *bal);
 #endif
 
