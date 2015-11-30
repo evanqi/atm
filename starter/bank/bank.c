@@ -261,7 +261,13 @@ void bank_process_local_command(Bank *bank, char *command, size_t len)
             printf("Usage: balance <user-name>\n");
             return;
         }
-	
+
+	if(strlen(temp_misc) > 0 || strlen(temp_misc_two) > 0)
+	{
+ 	    printf("Usage: balance <user-name>\n");
+            return;
+	}
+
         char *curr_bal = (char *) hash_table_find(bank->user_bal, name);
         if(curr_bal == NULL)
         {
@@ -298,7 +304,7 @@ void bank_process_remote_command(Bank *bank, char *command, size_t len)
     printf("Received the following:\n");
     fputs(command, stdout);
 	*/
-    printf("command");
+
     // ASSUME everything valid (checked in atm)
     char comm[2]; // w = withdrawal, u = user exists?, b = balance, p = user pin
     char name[MAX_NAME_SIZE];
@@ -306,7 +312,6 @@ void bank_process_remote_command(Bank *bank, char *command, size_t len)
     char amt[MAX_AMT_SIZE];
 
     sscanf(command, "%s %s %s %s", comm, name, pin, amt);
-
 
     if(strcmp(comm, "u") == 0)
     {
