@@ -80,9 +80,9 @@ int is_valid_username(char *username) {
 
 void atm_process_command(ATM *atm, char *command)
 {
-  char inbuf[USERNAME_ACTION_MAX], username[USERNAME_ACTION_MAX], action[ATM_ACTION_MAX];
+  char recvline[10000], inbuf[USERNAME_ACTION_MAX], username[USERNAME_ACTION_MAX], action[ATM_ACTION_MAX];
   char input_pin[5];
-  int pin = 0, amt;
+  int pin = 0, amt, n;
 
   //TODO: check length of action and username in sscanf
   sscanf(command, "%s %s", action, inbuf);
@@ -99,14 +99,13 @@ void atm_process_command(ATM *atm, char *command)
     }
 
     //TODO: validate username with bank
-    /* char recvline[10000]; */
-    /* int n; */
-
-    /* atm_send(atm, command, strlen(command)); */
-    /* n = atm_recv(atm,recvline,10000); */
-    /* recvline[n]=0; */
-    /* fputs(recvline,stdout); */
-
+    atm_send(atm, username, strlen(username));
+    n = atm_recv(atm,recvline,10000);
+    recvline[n]=0;
+    if(strcmp(recvline, "YES") != 0) {
+      printf("No such user\n");
+      return;
+    }
 
     //TODO: better pin input validation
     printf("PIN? ");
@@ -119,20 +118,21 @@ void atm_process_command(ATM *atm, char *command)
     }
 
     //TODO: validate pin with bank
-    
-    int flag = 1;
-    if(flag) {
-      printf("Authorized\n");
-      atm->session = 1;
-      atm->cur_user = (char *)malloc((strlen(username)+1)*sizeof(char));
-      strcpy(atm->cur_user, username);
+    atm_send(atm, input_pin, strlen(input_pin));
+    n = atm_recv(atm,recvline,10000);
+    recvline[n]=0;
+    if(strcmp(recvline, "YES") != 0) {
+      printf("Not authorized\n");
+      return;
     }
-    else {
-      printf("No such user\n");
-    }
+
+    printf("Authorized\n");
+    atm->session = 1;
+    atm->cur_user = (char *)malloc((strlen(username)+1)*sizeof(char));
+    strcpy(atm->cur_user, username);
   }
   else if(strcmp(action, WITHDRAW) == 0) {
-    if(!session) {
+    if(!atm->session) {
       printf("No user logged in\n");
       return;
     }
@@ -152,7 +152,7 @@ void atm_process_command(ATM *atm, char *command)
     }
   }
   else if(strcmp(action, BALANCE) == 0) {
-    if(!session) {
+    if(!atm->session) {
       printf("No user logged in\n");
       return;
     }
@@ -167,12 +167,12 @@ void atm_process_command(ATM *atm, char *command)
     printf("$%d: balance\n", balance);
   }
   else if(strcmp(action, END) == 0) {
-    if(!session) {
+    if(!atm->session) {
       printf("No user logged in\n");
       return;
     }
 
-    session = 0;
+    atm->session = 0;
     free(atm->cur_user);
     atm->cur_user = NULL;
     printf("User logged out\n");
@@ -184,8 +184,6 @@ void atm_process_command(ATM *atm, char *command)
     printf("Invalid command\n");
     return;
   }
-
-    // TODO: Implement the ATM's side of the ATM-bank protocol
 
 	/*
 	 * The following is a toy example that simply sends the
