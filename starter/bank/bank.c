@@ -156,19 +156,19 @@ void bank_process_local_command(Bank *bank, char *command, size_t len)
         }
 
 
-        // // create card
-        // int ufilelen = strlen(name) + 6;
-        // char userfile[ufilelen];
-        // memset(userfile, 0x00, ufilelen);
-        // strncpy(userfile, name, strlen(name));
-        // strncat(userfile, ".card", 5);
-        // FILE *card = fopen(userfile, "w");
-        // if(card == NULL){
-        //     printf("Error creating card file for user %s\n", name);
-        //     remove(userfile);
-        //     return;
-        // }
-        // fclose(card);
+        // create card
+        int ufilelen = strlen(name) + 6;
+        char userfile[ufilelen];
+        memset(userfile, 0x00, ufilelen);
+        strncpy(userfile, name, strlen(name));
+        strncat(userfile, ".card", 5);
+        FILE *card = fopen(userfile, "w");
+        if(card == NULL){
+            printf("Error creating card file for user %s\n", name);
+            remove(userfile);
+            return;
+        }
+        fclose(card);
 
         printf("pin: %s, balance: %s\n", misc, misc_two);
         hash_table_add(bank->user_bal, name, misc_two);
@@ -238,8 +238,8 @@ void bank_process_local_command(Bank *bank, char *command, size_t len)
         sprintf(new_bal_char, "%ld", new_bal);
         //update balance
         // BELOW GIVES MALLOC ERRORS
-        // hash_table_del(bank->user_bal, name);
-        // hash_table_add(bank->user_bal, name, new_bal_char);
+        hash_table_del(bank->user_bal, name);
+        hash_table_add(bank->user_bal, name, new_bal_char);
 
         printf("$%s added to %s's account\n", misc, name);
         return;
