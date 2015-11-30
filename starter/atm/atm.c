@@ -82,6 +82,7 @@ void atm_process_command(ATM *atm, char *command)
 {
   char recvline[10000], inbuf[USERNAME_ACTION_MAX], username[USERNAME_ACTION_MAX], action[ATM_ACTION_MAX];
   char input_pin[5];
+  char *sendbuffer;
   int pin = 0, amt, n;
 
   //TODO: check length of action and username in sscanf
@@ -99,10 +100,17 @@ void atm_process_command(ATM *atm, char *command)
     }
 
     //TODO: validate username with bank
-    atm_send(atm, username, strlen(username));
+    sendbuffer = (char *)malloc((strlen(username)+3)*sizeof(char));
+    *sendbuffer ='u';
+    *(sendbuffer+1)=' ';
+    strcat(sendbuffer+2, username);
+    sendbuffer[strlen(username) + 2] = 0;
+	printf("%s %d\n", sendbuffer, strlen(sendbuffer)+1);
+    atm_send(atm, sendbuffer, strlen(sendbuffer)+1);
+free(sendbuffer);
     n = atm_recv(atm,recvline,10000);
     recvline[n]=0;
-    if(strcmp(recvline, "YES") != 0) {
+    if(strcmp(recvline, "yes") != 0) {
       printf("No such user\n");
       return;
     }
