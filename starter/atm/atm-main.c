@@ -154,5 +154,7 @@ int main(int argc, char *argv[])
         }
         fflush(stdout);
     }
-	return EXIT_SUCCESS;
+    atm_free(atm);
+
+    return EXIT_SUCCESS;
 }

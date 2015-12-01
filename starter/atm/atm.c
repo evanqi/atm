@@ -105,9 +105,8 @@ void atm_process_command(ATM *atm, char *command)
     *(sendbuffer+1)=' ';
     strcat(sendbuffer+2, username);
     sendbuffer[strlen(username) + 2] = 0;
-	printf("%s %d\n", sendbuffer, strlen(sendbuffer)+1);
     atm_send(atm, sendbuffer, strlen(sendbuffer)+1);
-free(sendbuffer);
+    free(sendbuffer);
     n = atm_recv(atm,recvline,10000);
     recvline[n]=0;
     if(strcmp(recvline, "yes") != 0) {
@@ -126,10 +125,19 @@ free(sendbuffer);
     }
 
     //TODO: validate pin with bank
-    atm_send(atm, input_pin, strlen(input_pin));
+    sendbuffer = (char *)malloc((strlen(username)+8)*sizeof(char));
+    *sendbuffer ='p';
+    *(sendbuffer+1)= ' ';
+    strcat(sendbuffer, username);
+    *(sendbuffer+strlen(username)+2) = ' ';
+    strcat(sendbuffer, input_pin);
+    sendbuffer[strlen(username) + 4 + 3] = 0;
+    atm_send(atm, sendbuffer, strlen(sendbuffer)+1);
+    free(sendbuffer);
     n = atm_recv(atm,recvline,10000);
     recvline[n]=0;
-    if(strcmp(recvline, "YES") != 0) {
+
+    if(strcmp(recvline, "yes") != 0) {
       printf("Not authorized\n");
       return;
     }
