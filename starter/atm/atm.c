@@ -85,6 +85,13 @@ void atm_process_command(ATM *atm, char *command)
   char *sendbuffer;
   int pin = 0, amt, n, i;
 
+  //clear inbuf and action
+  for(i=0; i<USERNAME_ACTION_MAX; i++) {
+    inbuf[i] = 0;
+  }
+  for(i=0; i<ATM_ACTION_MAX; i++) {
+    action[i] = 0;
+  }
   //TODO: check length of action and username in sscanf
   sscanf(command, "%s %s", action, inbuf);
 
