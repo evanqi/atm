@@ -4,13 +4,14 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <ctype.h>
+#include <limits.h>
 
 static const char BEGIN[] = "begin-session";
 static const char WITHDRAW[] = "withdraw";
 static const char BALANCE[] = "balance";
 static const char END[] = "end-session";
 static const int ATM_ACTION_MAX = 14;
-static const int USERNAME_ACTION_MAX = 250;
+static const int USERNAME_MAX = 250;
 
 
 ATM* atm_create()
@@ -39,7 +40,7 @@ ATM* atm_create()
     // Set up the protocol state
     // TODO set up more, as needed
     atm->session = 0;
-    atm->cur_user = (char *)malloc(USERNAME_ACTION_MAX*sizeof(char));
+    atm->cur_user = (char *)calloc(USERNAME_MAX+1, sizeof(char));
     return atm;
 }
 
@@ -48,6 +49,8 @@ void atm_free(ATM *atm)
     if(atm != NULL)
     {
         close(atm->sockfd);
+        if(atm->cur_user != NULL)
+          free(atm->cur_user);
         free(atm);
     }
 }
@@ -78,30 +81,67 @@ int is_valid_username(char *username) {
   return 1;
 }
 
+int is_valid_pin(char *input_pin) {
+  int i;
+
+  for(i=0; i<strlen(input_pin); i++) {
+    if(!(input_pin[i] <= '9' && input_pin[i] >= '0')) {
+      return 0;
+    }
+  }
+
+  return 1;
+}
+
+int is_valid_amount(char *amt) {
+  int i;
+
+  if(strlen(amt) > 10) {
+    return 0;
+  }
+
+  for(i=0; i<strlen(amt); i++) {
+    if(!(amt[i] <= '9' && amt[i] >= '0')) {
+      return 0;
+    }
+  }
+
+  return 1;
+}
+
+
 void atm_process_command(ATM *atm, char *command)
 {
-  char recvline[10000], inbuf[USERNAME_ACTION_MAX], username[USERNAME_ACTION_MAX], action[ATM_ACTION_MAX];
-  char input_pin[5];
+  char recvline[10000], inbuf[301], username[USERNAME_MAX+1], action[101];
+  char input_pin[7];
   char *sendbuffer;
-  int pin = 0, amt, n, i;
+  int n = 0, i = 0;
+  long amt = 0;
 
   //initialize buffers
-  for(i=0; i<USERNAME_ACTION_MAX; i++) {
+  for(i=0; i<301; i++) {
     inbuf[i] = 0;
   }
-  for(i=0; i<ATM_ACTION_MAX; i++) {
+  for(i=0; i<101; i++) {
     action[i] = 0;
   }
   for(i=0; i<10000; i++) {
     recvline[i] = 0;
   }
-  input_pin[4] = 0;
-  //TODO: check length of action and username in sscanf
-  sscanf(command, "%s %s", action, inbuf);
+  for(i=0; i<6; i++) {
+    input_pin[i] = 0;
+  }
+
+  //TODO: check for extraneous input after "begin-session <username>"
+  sscanf(command, "%100s %300s", action, inbuf);
 
   if(strcmp(action, BEGIN) == 0) {
     if(atm->session) {
       printf("A user is already logged in\n");
+      return;
+    }
+    if(strlen(inbuf) > USERNAME_MAX) {
+      printf("Usage: begin-session <user-name>\n");
       return;
     }
     strcpy(username, inbuf);
@@ -111,13 +151,14 @@ void atm_process_command(ATM *atm, char *command)
     }
 
     //Send "u <username>" to bank and expect "yes" if user exists
-    sendbuffer = (char *)malloc((strlen(username)+3)*sizeof(char));
+    sendbuffer = (char *)calloc(strlen(username)+3, sizeof(char));
     *sendbuffer ='u';
     *(sendbuffer+1)=' ';
     strcat(sendbuffer+2, username);
     *(sendbuffer+strlen(username) + 2) = 0;
     atm_send(atm, sendbuffer, strlen(sendbuffer)+1);
     free(sendbuffer);
+    sendbuffer = NULL;
     n = atm_recv(atm,recvline,10000);
     recvline[n]=0;
     if(strcmp(recvline, "yes") != 0) {
@@ -125,17 +166,20 @@ void atm_process_command(ATM *atm, char *command)
       return;
     }
 
-    //TODO: better pin input validation
     printf("PIN? ");
-    scanf("%c%c%c%c", &input_pin[0], &input_pin[1], &input_pin[2], &input_pin[3]);
-    input_pin[4] = '\0';
-    pin = atoi(input_pin);
-    if(pin < 0 || pin > 9999) {
+    fgets(input_pin, 6, stdin);
+    if(!(strlen(input_pin) == 5 && input_pin[4] == '\n')) {
+      printf("Not authorized\n");
+      return;
+    }
+    input_pin[4] = 0;
+    if(!is_valid_pin(input_pin)) {
       printf("Not authorized\n");
       return;
     }
 
-    sendbuffer = (char *)malloc((strlen(username)+strlen(input_pin)+4)*sizeof(char));
+    //send "p <username> <pin>" to bank and expect "yes" if pin is valid
+    sendbuffer = (char *)calloc(strlen(username)+strlen(input_pin)+4, sizeof(char));
     *sendbuffer ='p';
     *(sendbuffer+1)= ' ';
     strcat(sendbuffer, username);
@@ -144,17 +188,19 @@ void atm_process_command(ATM *atm, char *command)
     *(sendbuffer+strlen(username)+strlen(input_pin)+3) = 0;
     atm_send(atm, sendbuffer, strlen(sendbuffer)+1);
     free(sendbuffer);
+    sendbuffer = NULL;
     n = atm_recv(atm,recvline,10000);
     recvline[n]=0;
 
-    /*if(strcmp(recvline, "yes") != 0) {
+printf("%s\n", recvline);
+    if(strcmp(recvline, "yes") != 0) {
       printf("Not authorized\n");
       return;
-    }*/
+    }
 
     printf("Authorized\n");
     atm->session = 1;
-    atm->cur_user = (char *)malloc((strlen(username)+1)*sizeof(char));
+    atm->cur_user = (char *)calloc(strlen(username)+1, sizeof(char));
     strcpy(atm->cur_user, username);
   }
   else if(strcmp(action, WITHDRAW) == 0) {
@@ -162,16 +208,18 @@ void atm_process_command(ATM *atm, char *command)
       printf("No user logged in\n");
       return;
     }
-    amt = atoi(inbuf);
-    if(amt < 0) {
+    if(!is_valid_amount(inbuf)) {
+      printf("Usage: withdraw <amt>\n");
+      return;
+    }
+    amt = strtol(inbuf, NULL, 10);
+    if(amt < 0 || amt > INT_MAX) {
       printf("Usage: withdraw <amt>\n");
       return;
     }
 
-    sendbuffer = (char *)malloc((strlen(username)+strlen(inbuf)+6)*sizeof(char));
-    for(i=0; i<strlen(username)+strlen(inbuf)+6; i++) {
-      *(sendbuffer+i) = 0;
-    }
+    //send "w <username> 0 <amt> to bank, expect "yes" if sufficient funds
+    sendbuffer = (char *)calloc(strlen(atm->cur_user)+strlen(inbuf)+6, sizeof(char));
     *sendbuffer ='w';
     *(sendbuffer+1)= ' ';
     strcat(sendbuffer, username);
@@ -182,11 +230,12 @@ void atm_process_command(ATM *atm, char *command)
     *(sendbuffer+strlen(username)+strlen(inbuf)+5) = 0;
     atm_send(atm, sendbuffer, strlen(sendbuffer)+1);
     free(sendbuffer);
+    sendbuffer = NULL;
     n = atm_recv(atm,recvline,10000);
     recvline[n]=0;
 
     if(strcmp(recvline, "yes") == 0) {
-      printf("$%d dispensed\n", amt);
+      printf("$%d dispensed\n", (int)amt);
     } else {
       printf("Insufficient funds\n");
     }
@@ -202,14 +251,15 @@ void atm_process_command(ATM *atm, char *command)
       return;
     }
 
-    //TODO: ask bank for balance
-    sendbuffer = (char *)malloc((strlen(username)+3)*sizeof(char));
+    //send "b <username>" to bank, expect <amt>
+    sendbuffer = (char *)calloc(strlen(username)+3, sizeof(char));
     *sendbuffer ='b';
     *(sendbuffer+1)=' ';
     strcat(sendbuffer+2, username);
     *(sendbuffer+strlen(username) + 2) = 0;
     atm_send(atm, sendbuffer, strlen(sendbuffer)+1);
     free(sendbuffer);
+    sendbuffer = NULL;
     n = atm_recv(atm,recvline,10000);
     recvline[n]=0;
 
@@ -226,9 +276,6 @@ void atm_process_command(ATM *atm, char *command)
     free(atm->cur_user);
     atm->cur_user = NULL;
     printf("User logged out\n");
-  }
-  else if(strcmp(action, "\n") == 0) {
-    return;
   }
   else {
     printf("Invalid command\n");
