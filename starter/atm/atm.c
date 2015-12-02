@@ -85,13 +85,17 @@ void atm_process_command(ATM *atm, char *command)
   char *sendbuffer;
   int pin = 0, amt, n, i;
 
-  //clear inbuf and action
+  //initialize buffers
   for(i=0; i<USERNAME_ACTION_MAX; i++) {
     inbuf[i] = 0;
   }
   for(i=0; i<ATM_ACTION_MAX; i++) {
     action[i] = 0;
   }
+  for(i=0; i<10000; i++) {
+    recvline[i] = 0;
+  }
+  input_pin[4] = 0;
   //TODO: check length of action and username in sscanf
   sscanf(command, "%s %s", action, inbuf);
 
@@ -106,6 +110,7 @@ void atm_process_command(ATM *atm, char *command)
       return;
     }
 
+    //Send "u <username>" to bank and expect "yes" if user exists
     sendbuffer = (char *)malloc((strlen(username)+3)*sizeof(char));
     *sendbuffer ='u';
     *(sendbuffer+1)=' ';
@@ -209,7 +214,7 @@ void atm_process_command(ATM *atm, char *command)
     recvline[n]=0;
 
     int balance = atoi(recvline);
-    printf("$%d: balance\n", balance);
+    printf("balance: $%d\n", balance);
   }
   else if(strcmp(action, END) == 0) {
     if(!atm->session) {
