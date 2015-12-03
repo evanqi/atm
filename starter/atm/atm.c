@@ -150,6 +150,16 @@ void atm_process_command(ATM *atm, char *command)
       return;
     }
 
+    char *tmp_buffer = (char *)calloc(strlen(username)+6, sizeof(char));
+    strcpy(tmp_buffer, username);
+    strcat(tmp_buffer, ".card");
+    atm->card = fopen(tmp_buffer, "r");
+    if(atm->card == NULL) {
+      printf("Unable to access %s's card\n", username);
+      return;
+    }
+    free(tmp_buffer);
+
     //Send "u <username>" to bank and expect "yes" if user exists
     sendbuffer = (char *)calloc(strlen(username)+3, sizeof(char));
     *sendbuffer ='u';
@@ -186,13 +196,13 @@ void atm_process_command(ATM *atm, char *command)
     *(sendbuffer+strlen(username)+2) = ' ';
     strcat(sendbuffer, input_pin);
     *(sendbuffer+strlen(username)+strlen(input_pin)+3) = 0;
+
     atm_send(atm, sendbuffer, strlen(sendbuffer)+1);
     free(sendbuffer);
     sendbuffer = NULL;
     n = atm_recv(atm,recvline,10000);
     recvline[n]=0;
 
-printf("%s\n", recvline);
     if(strcmp(recvline, "yes") != 0) {
       printf("Not authorized\n");
       return;
@@ -275,6 +285,8 @@ printf("%s\n", recvline);
     atm->session = 0;
     free(atm->cur_user);
     atm->cur_user = NULL;
+    fclose(atm->card);
+    fclose(atm->init);
     printf("User logged out\n");
   }
   else {

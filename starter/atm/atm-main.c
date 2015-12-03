@@ -33,6 +33,7 @@ int main(int argc, char *argv[])
     }
 
     ATM *atm = atm_create();
+    atm->init = atm_file;
 
     printf("%s", prompt);
     fflush(stdout);
