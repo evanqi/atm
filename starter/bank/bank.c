@@ -222,9 +222,9 @@ void bank_process_local_command(Bank *bank, char *command, size_t len)
        
         char* curr_bal = (char*) hash_table_find(bank->user_bal, name);
         
-        int curr_bal_int = strtol(curr_bal, NULL, 10);
-        int amt = strtol(misc, NULL, 10);
-        long new_bal = amt + curr_bal_int;  
+        unsigned int curr_bal_int = strtol(curr_bal, NULL, 10);
+        unsigned int amt = strtol(misc, NULL, 10);
+        unsigned int new_bal = amt + curr_bal_int;  
 
         //checks if new_bal was capped
         if( new_bal > INT_MAX || ((new_bal == INT_MAX) && ((new_bal - amt) != curr_bal_int))){
@@ -234,7 +234,7 @@ void bank_process_local_command(Bank *bank, char *command, size_t len)
 
         char *new_bal_char = (char *)calloc(MAX_MISC_SIZE, sizeof(char));
 
-        sprintf(new_bal_char, "%ld", new_bal);
+        sprintf(new_bal_char, "%u", new_bal);
 
         hash_table_del(bank->user_bal, name);
         hash_table_add(bank->user_bal, name, new_bal_char);
@@ -367,16 +367,16 @@ void bank_process_remote_command(Bank *bank, char *command, size_t len)
 	    return;
 	}
 
-	int amt_w = strtol(amt, NULL, 10);
-	int curr_amt = strtol((char *)hash_table_find(bank->user_bal, name), NULL, 10);
-	int new_amt = curr_amt - amt_w;
+	unsigned int amt_w = strtol(amt, NULL, 10);
+	unsigned int curr_amt = strtol((char *)hash_table_find(bank->user_bal, name), NULL, 10);
+	unsigned int new_amt = curr_amt - amt_w;
 	if(new_amt < 0)
 	{
 	    send_no_fund(bank);
 	    return;
 	}
-	char new_amt_char[MAX_AMT_SIZE];
-	sprintf(new_amt_char, "%d", new_amt);
+	char *new_amt_char = calloc(MAX_AMT_SIZE, sizeof(char));
+	sprintf(new_amt_char, "%u", new_amt);
 
 	hash_table_del(bank->user_bal, name);
 	hash_table_add(bank->user_bal, name,new_amt_char);
@@ -461,7 +461,7 @@ void send_no_pin(Bank *bank)
 
 void send_balance(Bank *bank, char *bal)
 {
-    bank_send(bank, bal, sizeof(bal));
+    bank_send(bank, bal, strlen(bal)+1);
 }
 
 

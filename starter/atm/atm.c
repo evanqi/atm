@@ -272,9 +272,8 @@ void atm_process_command(ATM *atm, char *command)
     sendbuffer = NULL;
     n = atm_recv(atm,recvline,10000);
     recvline[n]=0;
-
-    int balance = atoi(recvline);
-    printf("balance: $%d\n", balance);
+    unsigned int balance = atoi(recvline);
+    printf("balance: $%u\n", balance);
   }
   else if(strcmp(action, END) == 0) {
     if(!atm->session) {
