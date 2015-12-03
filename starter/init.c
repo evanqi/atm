@@ -72,6 +72,8 @@ int main(int argc, char *argv[]) {
 
   fputs(key, bankfile);
   fputs(key, atmfile);
+  fputs("\n", bankfile);
+  fputs("\n", atmfile);
   fputs(iv, bankfile);
   fputs(iv, atmfile);
 

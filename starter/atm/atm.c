@@ -12,7 +12,7 @@ static const char BALANCE[] = "balance";
 static const char END[] = "end-session";
 static const int ATM_ACTION_MAX = 14;
 static const int USERNAME_MAX = 250;
-
+static const int BLOCK_SIZE = 16;
 
 ATM* atm_create()
 {
@@ -109,21 +109,24 @@ int is_valid_amount(char *amt) {
   return 1;
 }
 
-int do_crypt(FILE *in, FILE *out, int do_encrypt)
+/*int do_crypt(ATM *atm, char *inbuf, int do_encrypt)
         {
-        unsigned char inbuf[1024], outbuf[1024 + EVP_MAX_BLOCK_LENGTH];
-        int inlen, outlen;
+        unsigned char outbuf[1024 + EVP_MAX_BLOCK_LENGTH];
+	unsigned char key[BLOCK_SIZE+1], iv[BLOCK_SIZE+1];
+        int inlen, outlen, i;
         EVP_CIPHER_CTX ctx;
-
-	//TODO set key and iv using rand()
-        unsigned char key[] = "0123456789abcdeF";
-        unsigned char iv[] = "1234567887654321";
 
         EVP_CIPHER_CTX_init(&ctx);
         EVP_CipherInit_ex(&ctx, EVP_aes_128_cbc(), NULL, NULL, NULL,
                 do_encrypt);
         OPENSSL_assert(EVP_CIPHER_CTX_key_length(&ctx) == 16);
         OPENSSL_assert(EVP_CIPHER_CTX_iv_length(&ctx) == 16);
+	for(i=0; i<BLOCK_SIZE; i++) {
+	  key[i] = fgetc(atm->init);
+	}
+	for(i=0; i<BLOCK_SIZE; i++) {
+	  iv[i] = fgetc(atm->init);
+	}
 
         EVP_CipherInit_ex(&ctx, NULL, NULL, key, iv, do_encrypt);
 
@@ -133,7 +136,6 @@ int do_crypt(FILE *in, FILE *out, int do_encrypt)
                 if(inlen <= 0) break;
                 if(!EVP_CipherUpdate(&ctx, outbuf, &outlen, inbuf, inlen))
                         {
-                        /* Error */
                         EVP_CIPHER_CTX_cleanup(&ctx);
                         return 0;
                         }
@@ -141,7 +143,6 @@ int do_crypt(FILE *in, FILE *out, int do_encrypt)
                 }
         if(!EVP_CipherFinal_ex(&ctx, outbuf, &outlen))
                 {
-                /* Error */
                 EVP_CIPHER_CTX_cleanup(&ctx);
                 return 0;
                 }
@@ -149,7 +150,7 @@ int do_crypt(FILE *in, FILE *out, int do_encrypt)
 
         EVP_CIPHER_CTX_cleanup(&ctx);
         return 1;
-        }
+        }*/
 
 void atm_process_command(ATM *atm, char *command)
 {
@@ -326,7 +327,6 @@ void atm_process_command(ATM *atm, char *command)
     free(atm->cur_user);
     atm->cur_user = NULL;
     fclose(atm->card);
-    fclose(atm->init);
     printf("User logged out\n");
   }
   else {
