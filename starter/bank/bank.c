@@ -51,8 +51,8 @@ void bank_free(Bank *bank)
     if(bank != NULL)
     {
         fclose(bank->init);
-        free(bank->user_pin);
-        free(bank->user_bal);
+        hash_table_free(bank->user_pin);
+        hash_table_free(bank->user_bal);
         close(bank->sockfd);
         free(bank);
     }
@@ -73,10 +73,10 @@ ssize_t bank_recv(Bank *bank, char *data, size_t max_data_len)
 
 void bank_process_local_command(Bank *bank, char *command, size_t len)
 {
-    char comm[MAX_COMMAND_SIZE];
-    char name[MAX_NAME_SIZE];
-    char misc[MAX_MISC_SIZE];
-    char misc_two[MAX_MISC_SIZE];
+    char *comm = (char *)calloc(MAX_COMMAND_SIZE, sizeof(char));
+    char *name = (char *)calloc(MAX_COMMAND_SIZE, sizeof(char));
+    char *misc = (char *)calloc(MAX_COMMAND_SIZE, sizeof(char));
+    char *misc_two = (char *)calloc(MAX_COMMAND_SIZE, sizeof(char));
 
     char temp_comm[MAX_LINE_SIZE];
     char temp_name[MAX_LINE_SIZE];
@@ -175,8 +175,8 @@ void bank_process_local_command(Bank *bank, char *command, size_t len)
         hash_table_add(bank->user_bal, name, misc_two); //username balance
         hash_table_add(bank->user_pin, name, misc);	//username pin
 
-        printf("Created user %s\n", name);
 
+        printf("Created user %s\n", name);
         return;
     } 
     else if(strcmp(comm, "deposit") == 0)
@@ -198,6 +198,7 @@ void bank_process_local_command(Bank *bank, char *command, size_t len)
         {
             printf("Usage: deposit <user-name> <amt>\n");
             return;
+
         }
 
         if(hash_table_find(bank->user_bal, name) == NULL)
@@ -218,7 +219,7 @@ void bank_process_local_command(Bank *bank, char *command, size_t len)
             printf("Usage: deposit <user-name> <amt>\n");
             return;
         }
-        
+       
         char* curr_bal = (char*) hash_table_find(bank->user_bal, name);
         
         int curr_bal_int = strtol(curr_bal, NULL, 10);
@@ -231,7 +232,7 @@ void bank_process_local_command(Bank *bank, char *command, size_t len)
             return;   
         }       
 
-        char new_bal_char[MAX_MISC_SIZE];
+        char *new_bal_char = (char *)calloc(MAX_MISC_SIZE, sizeof(char));
 
         sprintf(new_bal_char, "%ld", new_bal);
 
@@ -301,10 +302,10 @@ void bank_process_remote_command(Bank *bank, char *command, size_t len)
 	*/
 
     // ASSUME everything valid (checked in atm)
-    char comm[2]; // w = withdrawal, u = user exists?, b = balance, p = user pin
-    char name[MAX_NAME_SIZE];
-    char pin[MAX_PIN_SIZE];
-    char amt[MAX_AMT_SIZE];
+    char *comm = calloc(2, sizeof(char)); // w = withdrawal, u = user exists?, b = balance, p = user pin
+    char *name = calloc(MAX_NAME_SIZE, sizeof(char));
+    char *pin = calloc(MAX_PIN_SIZE, sizeof(char));
+    char *amt = calloc(MAX_AMT_SIZE, sizeof(char));
 
     sscanf(command, "%s %s %s %s", comm, name, pin, amt);
 
