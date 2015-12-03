@@ -28,7 +28,8 @@ typedef struct _ATM
     // TODO add more, as needed
     int session;
     char *cur_user;
-    FILE *init;
+    unsigned char *key;
+    unsigned char *iv;
     FILE *card;
 } ATM;
 

@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+static const char BLOCK_SIZE = 16;
 static const char prompt[] = "ATM: ";
 
 int main(int argc, char *argv[])
@@ -33,7 +34,8 @@ int main(int argc, char *argv[])
     }
 
     ATM *atm = atm_create();
-    atm->init = atm_file;
+    fread(atm->key, sizeof(char), BLOCK_SIZE, atm_file);
+    fread(atm->iv, sizeof(char), BLOCK_SIZE, atm_file);
 
     printf("%s", prompt);
     fflush(stdout);

@@ -41,6 +41,8 @@ ATM* atm_create()
     // TODO set up more, as needed
     atm->session = 0;
     atm->cur_user = (char *)calloc(USERNAME_MAX+1, sizeof(char));
+    atm->key = (unsigned char *)calloc(BLOCK_SIZE+1, sizeof(char));
+    atm->iv = (unsigned char *)calloc(BLOCK_SIZE+1, sizeof(char));
     return atm;
 }
 
@@ -51,6 +53,8 @@ void atm_free(ATM *atm)
         close(atm->sockfd);
         if(atm->cur_user != NULL)
           free(atm->cur_user);
+	free(atm->key);
+	free(atm->iv);
         free(atm);
     }
 }
@@ -109,11 +113,10 @@ int is_valid_amount(char *amt) {
   return 1;
 }
 
-/*int do_crypt(ATM *atm, char *inbuf, int do_encrypt)
+int do_crypt(ATM *atm, char *inbuf, char *res, int do_encrypt)
         {
-        unsigned char outbuf[1024 + EVP_MAX_BLOCK_LENGTH];
-	unsigned char key[BLOCK_SIZE+1], iv[BLOCK_SIZE+1];
-        int inlen, outlen, i;
+        unsigned char outbuf[10000 + EVP_MAX_BLOCK_LENGTH];
+        int outlen, tmplen;
         EVP_CIPHER_CTX ctx;
 
         EVP_CIPHER_CTX_init(&ctx);
@@ -121,36 +124,26 @@ int is_valid_amount(char *amt) {
                 do_encrypt);
         OPENSSL_assert(EVP_CIPHER_CTX_key_length(&ctx) == 16);
         OPENSSL_assert(EVP_CIPHER_CTX_iv_length(&ctx) == 16);
-	for(i=0; i<BLOCK_SIZE; i++) {
-	  key[i] = fgetc(atm->init);
-	}
-	for(i=0; i<BLOCK_SIZE; i++) {
-	  iv[i] = fgetc(atm->init);
-	}
 
-        EVP_CipherInit_ex(&ctx, NULL, NULL, key, iv, do_encrypt);
+        EVP_CipherInit_ex(&ctx, NULL, NULL, atm->key, atm->iv, do_encrypt);
 
-        for(;;)
-                {
-                inlen = fread(inbuf, 1, 1024, in);
-                if(inlen <= 0) break;
-                if(!EVP_CipherUpdate(&ctx, outbuf, &outlen, inbuf, inlen))
-                        {
-                        EVP_CIPHER_CTX_cleanup(&ctx);
-                        return 0;
-                        }
-                fwrite(outbuf, 1, outlen, out);
-                }
-        if(!EVP_CipherFinal_ex(&ctx, outbuf, &outlen))
-                {
-                EVP_CIPHER_CTX_cleanup(&ctx);
-                return 0;
-                }
-        fwrite(outbuf, 1, outlen, out);
+	if(!EVP_CipherUpdate(&ctx, outbuf, &outlen, (unsigned char *)inbuf, strlen(inbuf)))
+	{
+		EVP_CIPHER_CTX_cleanup(&ctx);
+		return 0;
+	}
+	memcpy(res, outbuf, outlen);
+	tmplen = outlen;
+	if(!EVP_CipherFinal_ex(&ctx, outbuf, &outlen))
+	{
+		EVP_CIPHER_CTX_cleanup(&ctx);
+		return 0;
+	}
+	memcpy(res+tmplen, outbuf, outlen);
 
         EVP_CIPHER_CTX_cleanup(&ctx);
         return 1;
-        }*/
+	}
 
 void atm_process_command(ATM *atm, char *command)
 {
@@ -176,6 +169,8 @@ void atm_process_command(ATM *atm, char *command)
 
   //TODO: check for extraneous input after "begin-session <username>"
   sscanf(command, "%100s %300s", action, inbuf);
+  fflush(stdout);
+  char *out;
 
   if(strcmp(action, BEGIN) == 0) {
     if(atm->session) {
@@ -220,6 +215,7 @@ void atm_process_command(ATM *atm, char *command)
 
     printf("PIN? ");
     fgets(input_pin, 6, stdin);
+    fflush(stdout);
     if(!(strlen(input_pin) == 5 && input_pin[4] == '\n')) {
       printf("Not authorized\n");
       return;
