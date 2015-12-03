@@ -369,12 +369,14 @@ void bank_process_remote_command(Bank *bank, char *command, size_t len)
 
 	unsigned int amt_w = strtol(amt, NULL, 10);
 	unsigned int curr_amt = strtol((char *)hash_table_find(bank->user_bal, name), NULL, 10);
-	unsigned int new_amt = curr_amt - amt_w;
-	if(new_amt < 0)
+
+	if(curr_amt < amt_w)
 	{
 	    send_no_fund(bank);
 	    return;
 	}
+	unsigned int new_amt = curr_amt - amt_w;
+
 	char *new_amt_char = calloc(MAX_AMT_SIZE, sizeof(char));
 	sprintf(new_amt_char, "%u", new_amt);
 
