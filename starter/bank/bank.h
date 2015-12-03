@@ -18,6 +18,7 @@
 #include <arpa/inet.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <openssl/evp.h>
 #include <stdio.h>
 #include "util/hash_table.h"
 #include "util/list.h"

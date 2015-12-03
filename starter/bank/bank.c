@@ -5,7 +5,7 @@
 #include <unistd.h>
 #include <limits.h>
 #include <ctype.h>
-
+#include <openssl/evp.h>
 
 #define MAX_COMMAND_SIZE 12
 #define MAX_NAME_SIZE 251
