@@ -13,6 +13,7 @@
 #define MAX_LINE_SIZE 1001
 #define MAX_PIN_SIZE 5
 #define MAX_AMT_SIZE 11
+#define BLOCK_SIZE 16
 
 Bank* bank_create()
 {
@@ -42,6 +43,8 @@ Bank* bank_create()
 
     bank->user_pin = hash_table_create(100);
     bank->user_bal = hash_table_create(100);
+    bank->key = (char *)calloc(BLOCK_SIZE, sizeof(char));
+    bank->iv = (char *)calloc(BLOCK_SIZE, sizeof(char));
 
     return bank;
 }
@@ -53,6 +56,8 @@ void bank_free(Bank *bank)
         fclose(bank->init);
         hash_table_free(bank->user_pin);
         hash_table_free(bank->user_bal);
+	free(bank->key);
+	free(bank->iv);
         close(bank->sockfd);
         free(bank);
     }
@@ -70,6 +75,45 @@ ssize_t bank_recv(Bank *bank, char *data, size_t max_data_len)
     // Returns the number of bytes received; negative on error
     return recvfrom(bank->sockfd, data, max_data_len, 0, NULL, NULL);
 }
+/*
+  unsigned char *out = (unsigned char *)calloc(10000, sizeof(char));
+  unsigned char *back = (unsigned char *)calloc(10000, sizeof(char));
+
+  int len = do_crypt(atm, (unsigned char *)command, out, 1, strlen(command));
+  do_crypt(atm, out, back, 0, len);
+  free(out); free(back);*/
+
+int do_crypt(Bank *bank, unsigned char *inbuf, unsigned char *res, int do_encrypt, int inlen)
+        {
+        unsigned char outbuf[10000 + EVP_MAX_BLOCK_LENGTH];
+        int outlen, len;
+        EVP_CIPHER_CTX ctx;
+
+        EVP_CIPHER_CTX_init(&ctx);
+        EVP_CipherInit_ex(&ctx, EVP_aes_128_cbc(), NULL, NULL, NULL,
+                do_encrypt);
+        OPENSSL_assert(EVP_CIPHER_CTX_key_length(&ctx) == 16);
+        OPENSSL_assert(EVP_CIPHER_CTX_iv_length(&ctx) == 16);
+
+        EVP_CipherInit_ex(&ctx, NULL, NULL, bank->key, bank->iv, do_encrypt);
+
+	if(!EVP_CipherUpdate(&ctx, outbuf, &outlen, inbuf, inlen))
+	{
+		EVP_CIPHER_CTX_cleanup(&ctx);
+		return 0;
+	}
+	memcpy(res, outbuf, outlen);
+	len = outlen;
+	if(!EVP_CipherFinal_ex(&ctx, outbuf, &outlen))
+	{
+		EVP_CIPHER_CTX_cleanup(&ctx);
+		return 0;
+	}
+	memcpy(res+len, outbuf, outlen);
+	len += outlen;
+        EVP_CIPHER_CTX_cleanup(&ctx);
+        return len;
+	}
 
 void bank_process_local_command(Bank *bank, char *command, size_t len)
 {
@@ -80,8 +124,8 @@ void bank_process_local_command(Bank *bank, char *command, size_t len)
     char *name = (char *)calloc(MAX_COMMAND_SIZE, sizeof(char));
     char *misc = (char *)calloc(MAX_COMMAND_SIZE, sizeof(char));
     char *misc_two = (char *)calloc(MAX_COMMAND_SIZE, sizeof(char));
-    unsigned char *encrypted = (unsigned char*) calloc (1024 + EVP_MAX_BLOCK_LENGTH, sizeof(unsigned char));
-    unsigned char *decrypted = (unsigned char*) calloc (1024 + EVP_MAX_BLOCK_LENGTH, sizeof(unsigned char));
+    /*unsigned char *encrypted = (unsigned char*) calloc (1024 + EVP_MAX_BLOCK_LENGTH, sizeof(unsigned char));
+    unsigned char *decrypted = (unsigned char*) calloc (1024 + EVP_MAX_BLOCK_LENGTH, sizeof(unsigned char));*/
 
     char temp_comm[MAX_LINE_SIZE];
     char temp_name[MAX_LINE_SIZE];
@@ -112,8 +156,8 @@ void bank_process_local_command(Bank *bank, char *command, size_t len)
 
 
     //TESTING ENCRYPTION AND DECRYPTION
-   encrypt(bank->init, comm, encrypted);
-   decrypt(bank->init, encrypted, decrypted);
+   //encrypt(bank->init, comm, encrypted);
+   //decrypt(bank->init, encrypted, decrypted);
 
 
     if(strcmp(comm, "create-user") == 0)
@@ -479,7 +523,7 @@ void send_balance(Bank *bank, char *bal)
     bank_send(bank, bal, strlen(bal)+1);
 }
 
-void encrypt(FILE *init, char *plain, unsigned char *encrypted)
+/*void encrypt(FILE *init, char *plain, unsigned char *encrypted)
 {
 
     unsigned char key[17] = {0};
@@ -531,7 +575,7 @@ void decrypt(FILE *init, unsigned char * encrypted, unsigned char * decrypted)
 
     rewind(init);
 
-}
+}*/
 
 
 

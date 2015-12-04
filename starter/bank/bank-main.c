@@ -11,6 +11,7 @@
 #include "bank.h"
 #include "ports.h"
 
+static const int BLOCK_SIZE = 16;
 static const char prompt[] = "BANK: ";
 
 int main(int argc, char**argv)
@@ -26,6 +27,9 @@ int main(int argc, char**argv)
     printf("Error opening bank initialization file\n");
     return 64;
    }
+
+    fread(bank->key, sizeof(char), BLOCK_SIZE, bank->init);
+    fread(bank->iv, sizeof(char), BLOCK_SIZE, bank->init);
 
    printf("%s", prompt);
    fflush(stdout);

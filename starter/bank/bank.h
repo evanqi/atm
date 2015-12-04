@@ -37,6 +37,8 @@ typedef struct _Bank
     HashTable *user_bal;
     HashTable *user_pin;
     FILE *init;
+    unsigned char *key;
+    unsigned char *iv;
 } Bank;
 
 Bank* bank_create();
@@ -56,6 +58,7 @@ void send_no_pin(Bank *bank);
 void send_balance(Bank *bank, char *bal);
 void encrypt(FILE *init, char *plain,unsigned char * encrypted);
 void decrypt(FILE *init,unsigned char * encrypted, unsigned char * decypted);
+int do_crypt(Bank *bank, unsigned char *inbuf, unsigned char *res, int do_encrypt, int inlen);
 
 #endif
 
