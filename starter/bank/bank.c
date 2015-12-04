@@ -76,17 +76,19 @@ ssize_t bank_recv(Bank *bank, char *data, size_t max_data_len)
     return recvfrom(bank->sockfd, data, max_data_len, 0, NULL, NULL);
 }
 /*
-  unsigned char *out = (unsigned char *)calloc(10000, sizeof(char));
-  unsigned char *back = (unsigned char *)calloc(10000, sizeof(char));
+  unsigned char *out = (unsigned char *)calloc(10000, sizeof(unsigned char));
+  unsigned char *back = (unsigned char *)calloc(10000, sizeof(unsigned char));
 
-  int len = do_crypt(atm, (unsigned char *)command, out, 1, strlen(command));
-  do_crypt(atm, out, back, 0, len);
-  free(out); free(back);*/
+  int len2 = do_crypt(bank, (unsigned char *)command, out, 1, strlen(command));
+  do_crypt(bank, out, back, 0, len2);
 
-int do_crypt(Bank *bank, unsigned char *inbuf, unsigned char *res, int do_encrypt, int inlen)
+  free(out); 
+  free(back);*/
+
+int do_crypt(Bank *bank, unsigned char *inbuf, unsigned char *res, int do_encrypt)
         {
         unsigned char outbuf[10000 + EVP_MAX_BLOCK_LENGTH];
-        int outlen, len;
+        int outlen, len, inlen = strlen((char*)inbuf);
         EVP_CIPHER_CTX ctx;
 
         EVP_CIPHER_CTX_init(&ctx);
@@ -118,14 +120,10 @@ int do_crypt(Bank *bank, unsigned char *inbuf, unsigned char *res, int do_encryp
 void bank_process_local_command(Bank *bank, char *command, size_t len)
 {
 
-
-
     char *comm = (char *)calloc(MAX_COMMAND_SIZE, sizeof(char));
     char *name = (char *)calloc(MAX_COMMAND_SIZE, sizeof(char));
     char *misc = (char *)calloc(MAX_COMMAND_SIZE, sizeof(char));
     char *misc_two = (char *)calloc(MAX_COMMAND_SIZE, sizeof(char));
-    /*unsigned char *encrypted = (unsigned char*) calloc (1024 + EVP_MAX_BLOCK_LENGTH, sizeof(unsigned char));
-    unsigned char *decrypted = (unsigned char*) calloc (1024 + EVP_MAX_BLOCK_LENGTH, sizeof(unsigned char));*/
 
     char temp_comm[MAX_LINE_SIZE];
     char temp_name[MAX_LINE_SIZE];
@@ -341,29 +339,18 @@ void bank_process_local_command(Bank *bank, char *command, size_t len)
 
 void bank_process_remote_command(Bank *bank, char *command, size_t len)
 {
-    // TODO: Implement the bank side of the ATM-bank protocol
-
-	/*
-	 * The following is a toy example that simply receives a
-	 * string from the ATM, prepends "Bank got: " and echoes 
-	 * it back to the ATM before printing it to stdout.
-	 */
-
-	/*
-    char sendline[1000];
-    command[len]=0;
-    sprintf(sendline, "Bank got: %s", command);
-    bank_send(bank, sendline, strlen(sendline));
-    printf("Received the following:\n");
-    fputs(command, stdout);
-	*/
-
     // ASSUME everything valid (checked in atm)
     char *comm = calloc(2, sizeof(char)); // w = withdrawal, u = user exists?, b = balance, p = user pin
     char *name = calloc(MAX_NAME_SIZE, sizeof(char));
     char *pin = calloc(MAX_PIN_SIZE, sizeof(char));
     char *amt = calloc(MAX_AMT_SIZE, sizeof(char));
 
+
+    unsigned char *back = (unsigned char *)calloc(10000, sizeof(unsigned char));
+
+    do_crypt(bank, (unsigned char *)command, back, 0);
+    printf("decrypted remote cmd: %s", back);
+    free(back);
     sscanf(command, "%s %s %s %s", comm, name, pin, amt);
 
     if(strcmp(comm, "u") == 0)
@@ -495,32 +482,66 @@ int check_bal(char *bal)
 
 void send_no_fund(Bank *bank)
 {
-    bank_send(bank, "nofund", sizeof("nofund"));
+    unsigned char *out = (unsigned char *)calloc(10000, sizeof(unsigned char));
+    char * response = (char *) calloc(7, sizeof(char));
+    response = "nofund";
+    do_crypt(bank, (unsigned char *)response, out, 1);
+    bank_send(bank, (char*) out, sizeof(out));
+    free(out); 
+    free(response); 
 }
 
 void send_no(Bank *bank)
 {
-    bank_send(bank, "no", sizeof("no"));
+    unsigned char *out = (unsigned char *)calloc(10000, sizeof(unsigned char));
+    char *response = (char *) calloc(3, sizeof(char));
+    response = "no";
+    do_crypt(bank, (unsigned char *)response, out, 1);
+    bank_send(bank, (char*) out, sizeof(out));
+    free(out); 
+    free(response); 
 }
 
 void send_yes(Bank *bank)
 {
-    bank_send(bank, "yes", sizeof("yes"));
+    unsigned char *out = (unsigned char *)calloc(10000, sizeof(unsigned char));
+    char *response = (char *) calloc(3, sizeof(char));
+    response = "yes";
+    do_crypt(bank, (unsigned char *)response, out, 1);
+    bank_send(bank, (char*) out, sizeof(out));
+
+    free(out);
+    free(response); 
 }
 
 void send_no_user(Bank *bank)
 {
-    bank_send(bank, "nouser", sizeof("nouser"));
+    unsigned char *out = (unsigned char *)calloc(10000, sizeof(unsigned char));
+    char *response = (char *) calloc(3, sizeof(char));
+    response = "nouser";
+    do_crypt(bank, (unsigned char *)response, out, 1);
+    bank_send(bank, (char*) out, sizeof(out));
+    free(out);
+    free(response);  
 }
 
 void send_no_pin(Bank *bank)
 {
-    bank_send(bank, "nopin", sizeof("nopin"));
+    unsigned char *out = (unsigned char *)calloc(10000, sizeof(unsigned char));
+    char *response = (char *) calloc(3, sizeof(char));
+    response = "nopin";
+    do_crypt(bank, (unsigned char *)response, out, 1);
+    bank_send(bank, (char*) out, sizeof(out));
+    free(out); 
+    free(response); 
 }
 
 void send_balance(Bank *bank, char *bal)
 {
-    bank_send(bank, bal, strlen(bal)+1);
+    unsigned char *out = (unsigned char *)calloc(10000, sizeof(unsigned char));
+    do_crypt(bank, (unsigned char *)bal, out, 1);
+    bank_send(bank, (char*) out, sizeof(out));
+    free(out); 
 }
 
 /*void encrypt(FILE *init, char *plain, unsigned char *encrypted)

@@ -58,7 +58,7 @@ void send_no_pin(Bank *bank);
 void send_balance(Bank *bank, char *bal);
 void encrypt(FILE *init, char *plain,unsigned char * encrypted);
 void decrypt(FILE *init,unsigned char * encrypted, unsigned char * decypted);
-int do_crypt(Bank *bank, unsigned char *inbuf, unsigned char *res, int do_encrypt, int inlen);
+int do_crypt(Bank *bank, unsigned char *inbuf, unsigned char *res, int do_encrypt);
 
 #endif
 
