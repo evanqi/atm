@@ -73,10 +73,15 @@ ssize_t bank_recv(Bank *bank, char *data, size_t max_data_len)
 
 void bank_process_local_command(Bank *bank, char *command, size_t len)
 {
+
+
+
     char *comm = (char *)calloc(MAX_COMMAND_SIZE, sizeof(char));
     char *name = (char *)calloc(MAX_COMMAND_SIZE, sizeof(char));
     char *misc = (char *)calloc(MAX_COMMAND_SIZE, sizeof(char));
     char *misc_two = (char *)calloc(MAX_COMMAND_SIZE, sizeof(char));
+    unsigned char *encrypted = (unsigned char*) calloc (1024 + EVP_MAX_BLOCK_LENGTH, sizeof(unsigned char));
+    unsigned char *decrypted = (unsigned char*) calloc (1024 + EVP_MAX_BLOCK_LENGTH, sizeof(unsigned char));
 
     char temp_comm[MAX_LINE_SIZE];
     char temp_name[MAX_LINE_SIZE];
@@ -104,6 +109,13 @@ void bank_process_local_command(Bank *bank, char *command, size_t len)
     }
 
     strncpy(comm, temp_comm, strlen(temp_comm) + 1);
+
+
+    //TESTING ENCRYPTION AND DECRYPTION
+   encrypt(bank->init, comm, encrypted);
+   decrypt(bank->init, encrypted, decrypted);
+
+
     if(strcmp(comm, "create-user") == 0)
     {
         if(strlen(temp_name) < 1 || strlen(temp_misc) < 1 || strlen(temp_misc_two) < 1)
@@ -119,6 +131,7 @@ void bank_process_local_command(Bank *bank, char *command, size_t len)
         }
 
         strncpy(name, temp_name, strlen(temp_name) + 1);
+
         if(check_username(name) == 0)
         {
             printf("Usage: create-user <user-name> <pin> <balance>\n");
@@ -464,6 +477,60 @@ void send_no_pin(Bank *bank)
 void send_balance(Bank *bank, char *bal)
 {
     bank_send(bank, bal, strlen(bal)+1);
+}
+
+void encrypt(FILE *init, char *plain, unsigned char *encrypted)
+{
+
+    unsigned char key[17] = {0};
+    unsigned char iv[17] = {0};
+
+    fgets(key, 17, init);
+    fgets(iv, 17, init);
+
+    //printf("key: %s\n", key);
+    //printf("iv: %u\n", iv);
+
+    EVP_CIPHER_CTX ctx;
+    EVP_CIPHER_CTX_init(&ctx);
+    int outlen;
+    EVP_EncryptInit_ex(&ctx, EVP_aes_128_cbc(), NULL, NULL, NULL);
+
+    OPENSSL_assert(EVP_CIPHER_CTX_key_length(&ctx) == 16);
+    OPENSSL_assert(EVP_CIPHER_CTX_iv_length(&ctx) == 16);
+
+    EVP_EncryptInit_ex(&ctx, EVP_aes_128_cbc(), NULL, key, iv);
+
+    EVP_EncryptUpdate(&ctx, encrypted, &outlen, plain, strlen(plain));
+    EVP_EncryptFinal_ex(&ctx, encrypted, &outlen);
+
+    EVP_CIPHER_CTX_cleanup(&ctx);
+
+    rewind(init);
+}
+
+void decrypt(FILE *init, unsigned char * encrypted, unsigned char * decrypted)
+{
+    unsigned char key[17] = {0};
+    unsigned char iv[17] = {0};
+
+    fgets(key, 17, init);
+    fgets(iv, 17, init);
+
+
+    EVP_CIPHER_CTX ctx;
+    EVP_CIPHER_CTX_init(&ctx);
+    int outlen;
+
+    EVP_DecryptInit_ex(&ctx, EVP_aes_128_cbc(), NULL, key, iv);
+
+    EVP_DecryptUpdate(&ctx, decrypted, &outlen, encrypted, strlen(encrypted));
+    EVP_DecryptFinal_ex(&ctx, decrypted, &outlen);
+    
+    printf("decrypted: %s\n", decrypted);
+
+    rewind(init);
+
 }
 
 

@@ -54,5 +54,8 @@ void send_yes(Bank *bank);
 void send_no_user(Bank *bank);
 void send_no_pin(Bank *bank);
 void send_balance(Bank *bank, char *bal);
+void encrypt(FILE *init, char *plain,unsigned char * encrypted);
+void decrypt(FILE *init,unsigned char * encrypted, unsigned char * decypted);
+
 #endif
 

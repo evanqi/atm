@@ -16,8 +16,9 @@ static const char prompt[] = "BANK: ";
 int main(int argc, char**argv)
 {
    int n;
-   char sendline[1000];
-   char recvline[1000];
+   //char sendline[10000];
+   char *sendline = (char *)calloc(10000, sizeof(char));
+   char * recvline = (char *)calloc(10000, sizeof(char));
    Bank *bank = bank_create();
   
    bank->init =fopen(argv[1], "r");
@@ -50,7 +51,8 @@ int main(int argc, char**argv)
            bank_process_remote_command(bank, recvline, n);
        }
    }
-
+   free(recvline);
+   free(sendline);
    bank_free(bank);
    return EXIT_SUCCESS;
 }
