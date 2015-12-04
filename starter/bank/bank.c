@@ -352,10 +352,8 @@ void bank_process_remote_command(Bank *bank, char *command, size_t len)
     char *amt = calloc(MAX_AMT_SIZE, sizeof(char));
 
     unsigned char *back = (unsigned char *)calloc(10000, sizeof(unsigned char));
-printf("i dont poop");
 
     do_crypt(bank, (unsigned char *)command, back, 0);
-    printf("decrypted remote cmd: %s\n", back);
 
     sscanf((char*)back, "%s %s %s %s", comm, name, pin, amt);
     free(back); 
@@ -538,61 +536,4 @@ void send_balance(Bank *bank, char *bal)
     do_crypt(bank, (unsigned char *)bal, out, 1);
     bank_send(bank, (char*) out, strlen((char *)out));
 }
-
-/*void encrypt(FILE *init, char *plain, unsigned char *encrypted)
-{
-
-    unsigned char key[17] = {0};
-    unsigned char iv[17] = {0};
-
-    fgets(key, 17, init);
-    fgets(iv, 17, init);
-
-    //printf("key: %s\n", key);
-    //printf("iv: %u\n", iv);
-
-    EVP_CIPHER_CTX ctx;
-    EVP_CIPHER_CTX_init(&ctx);
-    int outlen;
-    EVP_EncryptInit_ex(&ctx, EVP_aes_128_cbc(), NULL, NULL, NULL);
-
-    OPENSSL_assert(EVP_CIPHER_CTX_key_length(&ctx) == 16);
-    OPENSSL_assert(EVP_CIPHER_CTX_iv_length(&ctx) == 16);
-
-    EVP_EncryptInit_ex(&ctx, EVP_aes_128_cbc(), NULL, key, iv);
-
-    EVP_EncryptUpdate(&ctx, encrypted, &outlen, plain, strlen(plain));
-    EVP_EncryptFinal_ex(&ctx, encrypted, &outlen);
-
-    EVP_CIPHER_CTX_cleanup(&ctx);
-
-    rewind(init);
-}
-
-void decrypt(FILE *init, unsigned char * encrypted, unsigned char * decrypted)
-{
-    unsigned char key[17] = {0};
-    unsigned char iv[17] = {0};
-
-    fgets(key, 17, init);
-    fgets(iv, 17, init);
-
-
-    EVP_CIPHER_CTX ctx;
-    EVP_CIPHER_CTX_init(&ctx);
-    int outlen;
-
-    EVP_DecryptInit_ex(&ctx, EVP_aes_128_cbc(), NULL, key, iv);
-
-    EVP_DecryptUpdate(&ctx, decrypted, &outlen, encrypted, strlen(encrypted));
-    EVP_DecryptFinal_ex(&ctx, decrypted, &outlen);
-    
-    printf("decrypted: %s\n", decrypted);
-
-    rewind(init);
-
-}*/
-
-
-
 

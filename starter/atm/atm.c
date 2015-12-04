@@ -227,6 +227,8 @@ void atm_process_command(ATM *atm, char *command)
       printf("No such user\n");
       return;
     }
+    free(out);
+    out = NULL;
 
     printf("PIN? ");
     fgets(input_pin, 6, stdin);
@@ -249,14 +251,20 @@ void atm_process_command(ATM *atm, char *command)
     *(sendbuffer+strlen(username)+2) = ' ';
     strcat(sendbuffer, input_pin);
     *(sendbuffer+strlen(username)+strlen(input_pin)+3) = 0;
-
-    atm_send(atm, sendbuffer, strlen(sendbuffer)+1);
+    out = (unsigned char *)calloc(10000, sizeof(unsigned char));
+    do_crypt(atm, (unsigned char *)sendbuffer, out, 1);
+    atm_send(atm, (char *)out, strlen((char *)out));
     free(sendbuffer);
+    free(out);
     sendbuffer = NULL;
+    out = NULL;
     n = atm_recv(atm,recvline,10000);
     recvline[n]=0;
+    
+    out = (unsigned char *)calloc(10000, sizeof(unsigned char));
+    do_crypt(atm, recvline, out, 0);
 
-    if(strcmp(recvline, "yes") != 0) {
+    if(strcmp((char *)out, "yes") != 0) {
       printf("Not authorized\n");
       return;
     }
@@ -291,13 +299,20 @@ void atm_process_command(ATM *atm, char *command)
     *(sendbuffer+strlen(username)+4) = ' ';
     strcat(sendbuffer, inbuf);
     *(sendbuffer+strlen(username)+strlen(inbuf)+5) = 0;
-    atm_send(atm, sendbuffer, strlen(sendbuffer)+1);
+    unsigned char *out = (unsigned char *)calloc(10000, sizeof(unsigned char));
+    do_crypt(atm, (unsigned char *)sendbuffer, out, 1);
+    atm_send(atm, (char *)out, strlen((char *)out));
     free(sendbuffer);
+    free(out);
     sendbuffer = NULL;
+    out = NULL;
     n = atm_recv(atm,recvline,10000);
     recvline[n]=0;
+    
+    out = (unsigned char *)calloc(10000, sizeof(unsigned char));
+    do_crypt(atm, recvline, out, 0);
 
-    if(strcmp(recvline, "yes") == 0) {
+    if(!strcmp((char *)out, "yes") != 0) {
       printf("$%d dispensed\n", (int)amt);
     } else {
       printf("Insufficient funds\n");
@@ -320,12 +335,20 @@ void atm_process_command(ATM *atm, char *command)
     *(sendbuffer+1)=' ';
     strcat(sendbuffer+2, username);
     *(sendbuffer+strlen(username) + 2) = 0;
-    atm_send(atm, sendbuffer, strlen(sendbuffer)+1);
+    unsigned char *out = (unsigned char *)calloc(10000, sizeof(unsigned char));
+    do_crypt(atm, (unsigned char *)sendbuffer, out, 1);
+    atm_send(atm, (char *)out, strlen((char *)out));
     free(sendbuffer);
+    free(out);
     sendbuffer = NULL;
+    out = NULL;
     n = atm_recv(atm,recvline,10000);
     recvline[n]=0;
-    unsigned int balance = atoi(recvline);
+    
+    out = (unsigned char *)calloc(10000, sizeof(unsigned char));
+    do_crypt(atm, recvline, out, 0);
+
+    unsigned int balance = atoi((char *)out);
     printf("balance: $%u\n", balance);
   }
   else if(strcmp(action, END) == 0) {
