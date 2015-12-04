@@ -492,7 +492,7 @@ void send_no_fund(Bank *bank)
     char * response = (char *) calloc(7, sizeof(char));
     response = "nofund";
     do_crypt(bank, (unsigned char *)response, out, 1);
-    bank_send(bank, (char*) out, sizeof(out));
+    bank_send(bank, (char*) out, strlen((char *)out));
 }
 
 void send_no(Bank *bank)
@@ -501,7 +501,7 @@ void send_no(Bank *bank)
     char *response = (char *) calloc(3, sizeof(char));
     response = "no";
     do_crypt(bank, (unsigned char *)response, out, 1);
-    bank_send(bank, (char*) out, sizeof(out));
+    bank_send(bank, (char*) out, strlen((char *)out));
 }
 
 void send_yes(Bank *bank)
@@ -510,7 +510,7 @@ void send_yes(Bank *bank)
     char *response = (char *) calloc(3, sizeof(char));
     response = "yes";
     do_crypt(bank, (unsigned char *)response, out, 1);
-    bank_send(bank, (char*) out, sizeof(out));
+    bank_send(bank, (char*) out, strlen((char *)out));
 }
 
 void send_no_user(Bank *bank)
@@ -519,7 +519,7 @@ void send_no_user(Bank *bank)
     char *response = (char *) calloc(3, sizeof(char));
     response = "nouser";
     do_crypt(bank, (unsigned char *)response, out, 1);
-    bank_send(bank, (char*) out, sizeof(out));
+    bank_send(bank, (char*) out, strlen((char *)out));
 }
 
 void send_no_pin(Bank *bank)
@@ -528,7 +528,7 @@ void send_no_pin(Bank *bank)
     char *response = (char *) calloc(3, sizeof(char));
     response = "nopin";
     do_crypt(bank, (unsigned char *)response, out, 1);
-    bank_send(bank, (char*) out, sizeof(out));
+    bank_send(bank, (char*) out, strlen((char *)out));
 
 }
 
@@ -536,7 +536,7 @@ void send_balance(Bank *bank, char *bal)
 {
     unsigned char *out = (unsigned char *)calloc(10000, sizeof(unsigned char));
     do_crypt(bank, (unsigned char *)bal, out, 1);
-    bank_send(bank, (char*) out, sizeof(out));
+    bank_send(bank, (char*) out, strlen((char *)out));
 }
 
 /*void encrypt(FILE *init, char *plain, unsigned char *encrypted)

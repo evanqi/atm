@@ -155,7 +155,6 @@ int do_crypt(ATM *atm, unsigned char *inbuf, unsigned char *res, int do_encrypt)
 
 void atm_process_command(ATM *atm, char *command)
 {
-printf("key: %s\niv: %s\n", atm->key, atm->iv);
   char recvline[10000], inbuf[301], username[USERNAME_MAX+1], action[101];
   char input_pin[7];
   char *sendbuffer;
@@ -222,7 +221,7 @@ printf("key: %s\niv: %s\n", atm->key, atm->iv);
     recvline[n]=0;
     
     out = (unsigned char *)calloc(10000, sizeof(unsigned char));
-    do_crypt(atm, (unsigned char *)recvline, out, 0);
+    do_crypt(atm, recvline, out, 0);
 
     if(strcmp((char *)out, "yes") != 0) {
       printf("No such user\n");
