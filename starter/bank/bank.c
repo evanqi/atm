@@ -43,8 +43,8 @@ Bank* bank_create()
 
     bank->user_pin = hash_table_create(100);
     bank->user_bal = hash_table_create(100);
-    bank->key = (char *)calloc(BLOCK_SIZE, sizeof(char));
-    bank->iv = (char *)calloc(BLOCK_SIZE, sizeof(char));
+    bank->key = (unsigned char *)calloc(BLOCK_SIZE, sizeof(unsigned char));
+    bank->iv = (unsigned char *)calloc(BLOCK_SIZE, sizeof(unsigned char));
 
     return bank;
 }

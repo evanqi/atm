@@ -28,8 +28,8 @@ int main(int argc, char**argv)
     return 64;
    }
 
-    fread(bank->key, sizeof(char), BLOCK_SIZE, bank->init);
-    fread(bank->iv, sizeof(char), BLOCK_SIZE, bank->init);
+    fread(bank->key, sizeof(unsigned char), BLOCK_SIZE, bank->init);
+    fread(bank->iv, sizeof(unsigned char), BLOCK_SIZE, bank->init);
 
    printf("%s", prompt);
    fflush(stdout);
