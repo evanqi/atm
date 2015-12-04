@@ -16,7 +16,7 @@
 #define BLOCK_SIZE 16
 
 Bank* bank_create()
-{
+{ 
     Bank *bank = (Bank*) malloc(sizeof(Bank));
     if(bank == NULL)
     {
@@ -144,13 +144,7 @@ void bank_process_local_command(Bank *bank, char *command, size_t len)
 
     sscanf(command, "%s %s %s %s", temp_comm,temp_name,temp_misc,temp_misc_two);
     
-    if(strlen(temp_comm) < 1)
-    {
-        printf("Invalid command\n");
-        return;
-    }
-
-    if(strlen(temp_comm) >= MAX_COMMAND_SIZE)
+    if(strlen(temp_comm) < 1 || strlen(temp_comm) >= MAX_COMMAND_SIZE)
     {
         printf("Invalid command\n");
         return;
@@ -158,21 +152,9 @@ void bank_process_local_command(Bank *bank, char *command, size_t len)
 
     strncpy(comm, temp_comm, strlen(temp_comm) + 1);
 
-
-    //TESTING ENCRYPTION AND DECRYPTION
-   //encrypt(bank->init, comm, encrypted);
-   //decrypt(bank->init, encrypted, decrypted);
-
-
     if(strcmp(comm, "create-user") == 0)
     {
-        if(strlen(temp_name) < 1 || strlen(temp_misc) < 1 || strlen(temp_misc_two) < 1)
-        {
-            printf("Usage: create-user <user-name> <pin> <balance>\n");
-            return;
-        }
-
-        if(strlen(temp_name) >= MAX_NAME_SIZE)
+        if(strlen(temp_name) < 1 || strlen(temp_misc) < 1 || strlen(temp_misc_two) < 1 || strlen(temp_name) >= MAX_NAME_SIZE)
         {
             printf("Usage: create-user <user-name> <pin> <balance>\n");
             return;
@@ -192,7 +174,7 @@ void bank_process_local_command(Bank *bank, char *command, size_t len)
             return;
         }
 
-        if(strlen(temp_misc) != 4)
+        if(strlen(temp_misc) != 4 || strlen(temp_misc_two) > 10)
         {
             printf("Usage: create-user <user-name> <pin> <balance>\n");
             return;
@@ -200,12 +182,6 @@ void bank_process_local_command(Bank *bank, char *command, size_t len)
 
         strncpy(misc, temp_misc, strlen(temp_misc) + 1);
         if(check_pin(misc) == 0)
-        {
-            printf("Usage: create-user <user-name> <pin> <balance>\n");
-            return;
-        }
-
-        if(strlen(temp_misc_two) > 10) 
         {
             printf("Usage: create-user <user-name> <pin> <balance>\n");
             return;
@@ -219,58 +195,43 @@ void bank_process_local_command(Bank *bank, char *command, size_t len)
         }
 
          // create card
-         int ufilelen = strlen(name) + 6;
-         char userfile[ufilelen];
-         memset(userfile, 0x00, ufilelen);
-         strncpy(userfile, name, strlen(name));
-         strncat(userfile, ".card", 5);
-         FILE *card = fopen(userfile, "w");
+         int filelen = strlen(name) + 6;
+         char cardfile[filelen];
+         memset(cardfile, '\0', filelen);
+         strncpy(cardfile, name, strlen(name));
+         strncat(cardfile, ".card", 5);
+         FILE *card = fopen(cardfile, "w");
          if(card == NULL){
              printf("Error creating card file for user %s\n", name);
-             remove(userfile);
+             remove(cardfile);
              return;
         }
-	fprintf(card, "%s", misc);
         fclose(card);
 
         hash_table_add(bank->user_bal, name, misc_two); //username balance
         hash_table_add(bank->user_pin, name, misc);	//username pin
-
 
         printf("Created user %s\n", name);
         return;
     } 
     else if(strcmp(comm, "deposit") == 0)
     {
-        if(strlen(temp_name) < 1 || strlen(temp_misc) < 1)
-        {
-            printf("Usage: deposit <user-name> <amt>\n");
-            return;
-        }
-
-        if(strlen(temp_name) >= MAX_NAME_SIZE)
+        if(strlen(temp_name) < 1 || strlen(temp_misc) < 1 || strlen(temp_name) >= MAX_NAME_SIZE)
         {
             printf("Usage: deposit <user-name> <amt>\n");
             return;
         }
 
         strncpy(name, temp_name, strlen(temp_name) + 1);
-        if(check_username(name) != 1)
+        if(check_username(name) != 1 || strlen(temp_misc) > 10)
         {
             printf("Usage: deposit <user-name> <amt>\n");
             return;
-
         }
 
         if(hash_table_find(bank->user_bal, name) == NULL)
         {
             printf("No such user\n");
-            return;
-        }
-
-        if(strlen(temp_misc) > 10)
-        {
-            printf("Usage: deposit <user-name> <amt>\n");
             return;
         }
 
@@ -280,15 +241,16 @@ void bank_process_local_command(Bank *bank, char *command, size_t len)
             printf("Usage: deposit <user-name> <amt>\n");
             return;
         }
-       
+       	char *ptr;
         char* curr_bal = (char*) hash_table_find(bank->user_bal, name);
         
-        unsigned int curr_bal_int = strtol(curr_bal, NULL, 10);
-        unsigned int amt = strtol(misc, NULL, 10);
-        unsigned int new_bal = amt + curr_bal_int;  
+        unsigned int curr_bal_int = (unsigned int)strtoul(curr_bal, &ptr, 10);
+    	unsigned int amt = (unsigned int)strtoul(misc, &ptr, 10);
+   
+        unsigned int new_bal = (unsigned int)amt + (unsigned int)curr_bal_int;  
 
         //checks if new_bal was capped
-        if( new_bal > INT_MAX || ((new_bal == INT_MAX) && ((new_bal - amt) != curr_bal_int))){
+        if( new_bal > UINT_MAX || (new_bal - amt) != curr_bal_int || new_bal < curr_bal_int){
             printf("Too rich for this program\n");
             return;   
         }       
@@ -415,8 +377,9 @@ void bank_process_remote_command(Bank *bank, char *command, size_t len)
 	    return;
 	}
 
-	unsigned int amt_w = strtol(amt, NULL, 10);
-	unsigned int curr_amt = strtol((char *)hash_table_find(bank->user_bal, name), NULL, 10);
+    char *p;
+    unsigned int amt_w = (unsigned int)strtoul(amt, &p, 10);
+	unsigned int curr_amt = (unsigned int) strtoul((char *)hash_table_find(bank->user_bal, name), NULL, 10);
 
 	if(curr_amt < amt_w)
 	{
@@ -477,9 +440,9 @@ int check_bal(char *bal)
         if(!isdigit(bal[b]))
             return 0;
     }
-
-    long balance = strtol(bal, NULL, 10);
-    if(balance < 0 || balance > INT_MAX)
+    char *ptr;
+    unsigned int balance = (unsigned int)strtoul(bal, &ptr, 10);
+    if(balance < 0 || balance > UINT_MAX)
         return 0;
     return 1;
 }

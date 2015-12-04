@@ -159,7 +159,7 @@ void atm_process_command(ATM *atm, char *command)
   char input_pin[7];
   char *sendbuffer;
   int n = 0, i = 0;
-  long amt = 0;
+  unsigned int amt;
 
   //initialize buffers
   for(i=0; i<301; i++) {
@@ -283,8 +283,9 @@ void atm_process_command(ATM *atm, char *command)
       printf("Usage: withdraw <amt>\n");
       return;
     }
-    amt = strtol(inbuf, NULL, 10);
-    if(amt < 0 || amt > INT_MAX) {
+    char *p;
+    amt = (unsigned int)strtoul(inbuf, &p, 10);
+    if(amt < 0 || amt > UINT_MAX) {
       printf("Usage: withdraw <amt>\n");
       return;
     }
@@ -313,7 +314,7 @@ void atm_process_command(ATM *atm, char *command)
     do_crypt(atm, recvline, out, 0);
 
     if(!strcmp((char *)out, "yes") != 0) {
-      printf("$%d dispensed\n", (int)amt);
+      printf("$%u dispensed\n", amt);
     } else {
       printf("Insufficient funds\n");
     }
@@ -347,8 +348,8 @@ void atm_process_command(ATM *atm, char *command)
     
     out = (unsigned char *)calloc(10000, sizeof(unsigned char));
     do_crypt(atm, recvline, out, 0);
-
-    unsigned int balance = atoi((char *)out);
+    char *ptr;
+    unsigned int balance = (unsigned int)strtoul((char *)out, &ptr, 10);
     printf("balance: $%u\n", balance);
   }
   else if(strcmp(action, END) == 0) {
