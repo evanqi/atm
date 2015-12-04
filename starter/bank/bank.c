@@ -87,7 +87,7 @@ ssize_t bank_recv(Bank *bank, char *data, size_t max_data_len)
 
 int do_crypt(Bank *bank, unsigned char *inbuf, unsigned char *res, int do_encrypt)
         {
-printf("i poop");
+
         unsigned char outbuf[10000 + EVP_MAX_BLOCK_LENGTH];
         int outlen, len, inlen = strlen((char*)inbuf);
         EVP_CIPHER_CTX ctx;
@@ -97,17 +97,17 @@ printf("i poop");
                 do_encrypt);
         OPENSSL_assert(EVP_CIPHER_CTX_key_length(&ctx) == 16);
         OPENSSL_assert(EVP_CIPHER_CTX_iv_length(&ctx) == 16);
-printf("i like poop");
+
 
         EVP_CipherInit_ex(&ctx, NULL, NULL, bank->key, bank->iv, do_encrypt);
-printf("i hate poop");
+
 
 	if(!EVP_CipherUpdate(&ctx, outbuf, &outlen, inbuf, inlen))
 	{
 		EVP_CIPHER_CTX_cleanup(&ctx);
 		return 0;
 	}
-printf("i eat poop");
+
 
 	memcpy(res, outbuf, outlen);
 	len = outlen;
@@ -116,7 +116,6 @@ printf("i eat poop");
 		EVP_CIPHER_CTX_cleanup(&ctx);
 		return 0;
 	}
-printf("i poop");
 
 	memcpy(res+len, outbuf, outlen);
 	len += outlen;
@@ -356,10 +355,10 @@ void bank_process_remote_command(Bank *bank, char *command, size_t len)
 printf("i dont poop");
 
     do_crypt(bank, (unsigned char *)command, back, 0);
-    printf("decrypted remote cmd: %s", back);
-    free(back);
-    sscanf(command, "%s %s %s %s", comm, name, pin, amt);
+    printf("decrypted remote cmd: %s\n", back);
 
+    sscanf((char*)back, "%s %s %s %s", comm, name, pin, amt);
+    free(back); 
     if(strcmp(comm, "u") == 0)
     {
 	if(hash_table_find(bank->user_bal,name) == NULL)
@@ -494,8 +493,6 @@ void send_no_fund(Bank *bank)
     response = "nofund";
     do_crypt(bank, (unsigned char *)response, out, 1);
     bank_send(bank, (char*) out, sizeof(out));
-    free(out); 
-    free(response); 
 }
 
 void send_no(Bank *bank)
@@ -505,8 +502,6 @@ void send_no(Bank *bank)
     response = "no";
     do_crypt(bank, (unsigned char *)response, out, 1);
     bank_send(bank, (char*) out, sizeof(out));
-    free(out); 
-    free(response); 
 }
 
 void send_yes(Bank *bank)
@@ -516,9 +511,6 @@ void send_yes(Bank *bank)
     response = "yes";
     do_crypt(bank, (unsigned char *)response, out, 1);
     bank_send(bank, (char*) out, sizeof(out));
-
-    free(out);
-    free(response); 
 }
 
 void send_no_user(Bank *bank)
@@ -528,8 +520,6 @@ void send_no_user(Bank *bank)
     response = "nouser";
     do_crypt(bank, (unsigned char *)response, out, 1);
     bank_send(bank, (char*) out, sizeof(out));
-    free(out);
-    free(response);  
 }
 
 void send_no_pin(Bank *bank)
@@ -539,8 +529,7 @@ void send_no_pin(Bank *bank)
     response = "nopin";
     do_crypt(bank, (unsigned char *)response, out, 1);
     bank_send(bank, (char*) out, sizeof(out));
-    free(out); 
-    free(response); 
+
 }
 
 void send_balance(Bank *bank, char *bal)
@@ -548,7 +537,6 @@ void send_balance(Bank *bank, char *bal)
     unsigned char *out = (unsigned char *)calloc(10000, sizeof(unsigned char));
     do_crypt(bank, (unsigned char *)bal, out, 1);
     bank_send(bank, (char*) out, sizeof(out));
-    free(out); 
 }
 
 /*void encrypt(FILE *init, char *plain, unsigned char *encrypted)
