@@ -113,10 +113,18 @@ int is_valid_amount(char *amt) {
   return 1;
 }
 
-int do_crypt(ATM *atm, char *inbuf, char *res, int do_encrypt)
+/*
+  unsigned char *out = (unsigned char *)calloc(10000, sizeof(char));
+  unsigned char *back = (unsigned char *)calloc(10000, sizeof(char));
+
+  int len = do_crypt(atm, (unsigned char *)command, out, 1, strlen(command));
+  do_crypt(atm, out, back, 0, len);
+  free(out); free(back);*/
+
+int do_crypt(ATM *atm, unsigned char *inbuf, unsigned char *res, int do_encrypt, int inlen)
         {
         unsigned char outbuf[10000 + EVP_MAX_BLOCK_LENGTH];
-        int outlen, tmplen;
+        int outlen, len;
         EVP_CIPHER_CTX ctx;
 
         EVP_CIPHER_CTX_init(&ctx);
@@ -127,22 +135,22 @@ int do_crypt(ATM *atm, char *inbuf, char *res, int do_encrypt)
 
         EVP_CipherInit_ex(&ctx, NULL, NULL, atm->key, atm->iv, do_encrypt);
 
-	if(!EVP_CipherUpdate(&ctx, outbuf, &outlen, (unsigned char *)inbuf, strlen(inbuf)))
+	if(!EVP_CipherUpdate(&ctx, outbuf, &outlen, inbuf, inlen))
 	{
 		EVP_CIPHER_CTX_cleanup(&ctx);
 		return 0;
 	}
 	memcpy(res, outbuf, outlen);
-	tmplen = outlen;
+	len = outlen;
 	if(!EVP_CipherFinal_ex(&ctx, outbuf, &outlen))
 	{
 		EVP_CIPHER_CTX_cleanup(&ctx);
 		return 0;
 	}
-	memcpy(res+tmplen, outbuf, outlen);
-
+	memcpy(res+len, outbuf, outlen);
+	len += outlen;
         EVP_CIPHER_CTX_cleanup(&ctx);
-        return 1;
+        return len;
 	}
 
 void atm_process_command(ATM *atm, char *command)
@@ -170,7 +178,14 @@ void atm_process_command(ATM *atm, char *command)
   //TODO: check for extraneous input after "begin-session <username>"
   sscanf(command, "%100s %300s", action, inbuf);
   fflush(stdout);
-  char *out;
+  unsigned char *out = (unsigned char *)calloc(10000, sizeof(char));
+  unsigned char *back = (unsigned char *)calloc(10000, sizeof(char));
+  int len = 0;
+
+  len = do_crypt(atm, (unsigned char *)command, out, 1, strlen(command));
+  do_crypt(atm, out, back, 0, len);
+printf("%s\n", back);
+  free(out); free(back);
 
   if(strcmp(action, BEGIN) == 0) {
     if(atm->session) {
