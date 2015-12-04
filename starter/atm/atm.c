@@ -41,8 +41,8 @@ ATM* atm_create()
     // TODO set up more, as needed
     atm->session = 0;
     atm->cur_user = (char *)calloc(USERNAME_MAX+1, sizeof(char));
-    atm->key = (unsigned char *)calloc(BLOCK_SIZE+1, sizeof(char));
-    atm->iv = (unsigned char *)calloc(BLOCK_SIZE+1, sizeof(char));
+    atm->key = (unsigned char *)calloc(BLOCK_SIZE+1, sizeof(unsigned char));
+    atm->iv = (unsigned char *)calloc(BLOCK_SIZE+1, sizeof(unsigned char));
     return atm;
 }
 
@@ -121,7 +121,7 @@ int is_valid_amount(char *amt) {
   do_crypt(atm, out, back, 0, len);
   free(out); free(back);*/
 
-int do_crypt(ATM *atm, unsigned char *inbuf, unsigned char *res, int do_encrypt, int inlen)
+int do_crypt(ATM *atm, unsigned char *inbuf, unsigned char *res, int do_encrypt)
         {
         unsigned char outbuf[10000 + EVP_MAX_BLOCK_LENGTH];
         int outlen, len;
@@ -135,7 +135,7 @@ int do_crypt(ATM *atm, unsigned char *inbuf, unsigned char *res, int do_encrypt,
 
         EVP_CipherInit_ex(&ctx, NULL, NULL, atm->key, atm->iv, do_encrypt);
 
-	if(!EVP_CipherUpdate(&ctx, outbuf, &outlen, inbuf, inlen))
+	if(!EVP_CipherUpdate(&ctx, outbuf, &outlen, inbuf, strlen((char *)inbuf)))
 	{
 		EVP_CIPHER_CTX_cleanup(&ctx);
 		return 0;
@@ -155,6 +155,7 @@ int do_crypt(ATM *atm, unsigned char *inbuf, unsigned char *res, int do_encrypt,
 
 void atm_process_command(ATM *atm, char *command)
 {
+printf("key: %s\niv: %s\n", atm->key, atm->iv);
   char recvline[10000], inbuf[301], username[USERNAME_MAX+1], action[101];
   char input_pin[7];
   char *sendbuffer;
@@ -178,14 +179,6 @@ void atm_process_command(ATM *atm, char *command)
   //TODO: check for extraneous input after "begin-session <username>"
   sscanf(command, "%100s %300s", action, inbuf);
   fflush(stdout);
-  unsigned char *out = (unsigned char *)calloc(10000, sizeof(char));
-  unsigned char *back = (unsigned char *)calloc(10000, sizeof(char));
-  int len = 0;
-
-  len = do_crypt(atm, (unsigned char *)command, out, 1, strlen(command));
-  do_crypt(atm, out, back, 0, len);
-printf("%s\n", back);
-  free(out); free(back);
 
   if(strcmp(action, BEGIN) == 0) {
     if(atm->session) {
@@ -218,12 +211,20 @@ printf("%s\n", back);
     *(sendbuffer+1)=' ';
     strcat(sendbuffer+2, username);
     *(sendbuffer+strlen(username) + 2) = 0;
-    atm_send(atm, sendbuffer, strlen(sendbuffer)+1);
+    unsigned char *out = (unsigned char *)calloc(10000, sizeof(unsigned char));
+    do_crypt(atm, (unsigned char *)sendbuffer, out, 1);
+    atm_send(atm, (char *)out, strlen((char *)out));
     free(sendbuffer);
+    free(out);
     sendbuffer = NULL;
+    out = NULL;
     n = atm_recv(atm,recvline,10000);
     recvline[n]=0;
-    if(strcmp(recvline, "yes") != 0) {
+    
+    out = (unsigned char *)calloc(10000, sizeof(unsigned char));
+    do_crypt(atm, (unsigned char *)recvline, out, 0);
+
+    if(strcmp((char *)out, "yes") != 0) {
       printf("No such user\n");
       return;
     }

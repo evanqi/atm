@@ -43,8 +43,8 @@ Bank* bank_create()
 
     bank->user_pin = hash_table_create(100);
     bank->user_bal = hash_table_create(100);
-    bank->key = (unsigned char *)calloc(BLOCK_SIZE, sizeof(unsigned char));
-    bank->iv = (unsigned char *)calloc(BLOCK_SIZE, sizeof(unsigned char));
+    bank->key = (unsigned char *)calloc(BLOCK_SIZE+1, sizeof(unsigned char));
+    bank->iv = (unsigned char *)calloc(BLOCK_SIZE+1, sizeof(unsigned char));
 
     return bank;
 }
@@ -87,6 +87,7 @@ ssize_t bank_recv(Bank *bank, char *data, size_t max_data_len)
 
 int do_crypt(Bank *bank, unsigned char *inbuf, unsigned char *res, int do_encrypt)
         {
+printf("i poop");
         unsigned char outbuf[10000 + EVP_MAX_BLOCK_LENGTH];
         int outlen, len, inlen = strlen((char*)inbuf);
         EVP_CIPHER_CTX ctx;
@@ -96,14 +97,18 @@ int do_crypt(Bank *bank, unsigned char *inbuf, unsigned char *res, int do_encryp
                 do_encrypt);
         OPENSSL_assert(EVP_CIPHER_CTX_key_length(&ctx) == 16);
         OPENSSL_assert(EVP_CIPHER_CTX_iv_length(&ctx) == 16);
+printf("i like poop");
 
         EVP_CipherInit_ex(&ctx, NULL, NULL, bank->key, bank->iv, do_encrypt);
+printf("i hate poop");
 
 	if(!EVP_CipherUpdate(&ctx, outbuf, &outlen, inbuf, inlen))
 	{
 		EVP_CIPHER_CTX_cleanup(&ctx);
 		return 0;
 	}
+printf("i eat poop");
+
 	memcpy(res, outbuf, outlen);
 	len = outlen;
 	if(!EVP_CipherFinal_ex(&ctx, outbuf, &outlen))
@@ -111,6 +116,8 @@ int do_crypt(Bank *bank, unsigned char *inbuf, unsigned char *res, int do_encryp
 		EVP_CIPHER_CTX_cleanup(&ctx);
 		return 0;
 	}
+printf("i poop");
+
 	memcpy(res+len, outbuf, outlen);
 	len += outlen;
         EVP_CIPHER_CTX_cleanup(&ctx);
@@ -345,8 +352,8 @@ void bank_process_remote_command(Bank *bank, char *command, size_t len)
     char *pin = calloc(MAX_PIN_SIZE, sizeof(char));
     char *amt = calloc(MAX_AMT_SIZE, sizeof(char));
 
-
     unsigned char *back = (unsigned char *)calloc(10000, sizeof(unsigned char));
+printf("i dont poop");
 
     do_crypt(bank, (unsigned char *)command, back, 0);
     printf("decrypted remote cmd: %s", back);
