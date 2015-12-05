@@ -206,6 +206,9 @@ void bank_process_local_command(Bank *bank, char *command, size_t len)
              remove(cardfile);
              return;
         }
+	unsigned char *buff = (unsigned char *)calloc(BLOCK_SIZE+1, sizeof(char));
+	do_crypt(bank, (unsigned char *)misc, buff, 1);
+	fputs((char *)buff, card);
         fclose(card);
 
         hash_table_add(bank->user_bal, name, misc_two); //username balance

@@ -228,6 +228,39 @@ void atm_process_command(ATM *atm, char *command)
       return;
     }
     free(tmp_buffer);
+    tmp_buffer = NULL;
+    unsigned char *buff = (unsigned char *)calloc(BLOCK_SIZE+1, sizeof(unsigned char));
+    unsigned char *check_pin = (unsigned char *)calloc(BLOCK_SIZE+1, sizeof(unsigned char));
+    fread(buff, sizeof(char), BLOCK_SIZE, atm->card);
+    do_crypt(atm, buff, check_pin, 0);
+    sendbuffer = (char *)calloc(strlen(username)+strlen((char *)check_pin)+4, sizeof(char));
+    *sendbuffer ='p';
+    *(sendbuffer+1)= ' ';
+    strcat(sendbuffer, username);
+    *(sendbuffer+strlen(username)+2) = ' ';
+    strcat(sendbuffer, (char *)check_pin);
+    *(sendbuffer+strlen(username)+strlen((char *)check_pin)+3) = 0;
+    unsigned char *out = (unsigned char *)calloc(10000, sizeof(unsigned char));
+    do_crypt(atm, (unsigned char *)sendbuffer, out, 1);
+    atm_send(atm, (char *)out, strlen((char *)out));
+    free(sendbuffer);
+    free(out);
+    free(buff);
+    free(check_pin);
+    sendbuffer = NULL;
+    out = NULL;
+    buff = NULL;
+    check_pin = NULL;
+    n = atm_recv(atm,recvline,10000);
+    recvline[n]=0;
+    
+    out = (unsigned char *)calloc(10000, sizeof(unsigned char));
+    do_crypt(atm, recvline, out, 0);
+
+    if(strcmp((char *)out, "yes") != 0) {
+      printf("Not authorized\n");
+      return;
+    }
 
     //Send "u <username>" to bank and expect "yes" if user exists
     sendbuffer = (char *)calloc(strlen(username)+3, sizeof(char));
@@ -235,7 +268,7 @@ void atm_process_command(ATM *atm, char *command)
     *(sendbuffer+1)=' ';
     strcat(sendbuffer+2, username);
     *(sendbuffer+strlen(username) + 2) = 0;
-    unsigned char *out = (unsigned char *)calloc(10000, sizeof(unsigned char));
+    out = (unsigned char *)calloc(10000, sizeof(unsigned char));
     do_crypt(atm, (unsigned char *)sendbuffer, out, 1);
     atm_send(atm, (char *)out, strlen((char *)out));
     free(sendbuffer);
