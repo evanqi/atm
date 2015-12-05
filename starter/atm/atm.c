@@ -206,15 +206,17 @@ void atm_process_command(ATM *atm, char *command)
 	char* try = (char*) hash_table_find(atm->attempts, username);
 	int try_int = atoi(try);
 	try_int++;
-	char *new_try =(char *)calloc(5, sizeof(char));
-        sprintf(new_try, "%d", try_int);
-	hash_table_del(atm->attempts, username);
-	hash_table_add(atm->attempts, username, new_try);
+	
 	if(try_int > 2)
 	{
 	printf("LOCKED OUT\n");
 	return;
 	}
+
+	char *new_try =(char *)calloc(5, sizeof(char));
+        sprintf(new_try, "%d", try_int);
+	hash_table_del(atm->attempts, username);
+	hash_table_add(atm->attempts, username, new_try);
     }
 
     char *tmp_buffer = (char *)calloc(strlen(username)+6, sizeof(char));
