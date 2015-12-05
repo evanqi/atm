@@ -5,6 +5,8 @@
 #include <unistd.h>
 #include <ctype.h>
 #include <limits.h>
+#include "util/hash_table.h"
+#include "util/list.h"
 
 static const char BEGIN[] = "begin-session";
 static const char WITHDRAW[] = "withdraw";
@@ -43,6 +45,7 @@ ATM* atm_create()
     atm->cur_user = (char *)calloc(USERNAME_MAX+1, sizeof(char));
     atm->key = (unsigned char *)calloc(BLOCK_SIZE+1, sizeof(unsigned char));
     atm->iv = (unsigned char *)calloc(BLOCK_SIZE+1, sizeof(unsigned char));
+    atm->attempts = hash_table_create(100);
     return atm;
 }
 
@@ -54,6 +57,7 @@ void atm_free(ATM *atm)
         if(atm->cur_user != NULL)
           free(atm->cur_user);
 	free(atm->key);
+        hash_table_free(atm->attempts);
 	free(atm->iv);
         free(atm);
     }
@@ -192,6 +196,25 @@ void atm_process_command(ATM *atm, char *command)
     if(!is_valid_username(username)) {
       printf("Usage: begin-session <user-name>\n");
       return;
+    }
+
+	//USERNAME for the first time
+    if(hash_table_find(atm->attempts, username) == NULL)
+    {
+	hash_table_add(atm->attempts, username, "0");
+    } else {
+	char* try = (char*) hash_table_find(atm->attempts, username);
+	int try_int = atoi(try);
+	try_int++;
+	char *new_try =(char *)calloc(5, sizeof(char));
+        sprintf(new_try, "%d", try_int);
+	hash_table_del(atm->attempts, username);
+	hash_table_add(atm->attempts, username, new_try);
+	if(try_int > 2)
+	{
+	printf("LOCKED OUT\n");
+	return;
+	}
     }
 
     char *tmp_buffer = (char *)calloc(strlen(username)+6, sizeof(char));

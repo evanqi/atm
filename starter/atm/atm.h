@@ -16,6 +16,8 @@
 #include <netinet/in.h>
 #include <stdio.h>
 #include <openssl/evp.h>
+#include "util/hash_table.h"
+#include "util/list.h"
 
 typedef struct _ATM
 {
@@ -30,6 +32,7 @@ typedef struct _ATM
     char *cur_user;
     unsigned char *key;
     unsigned char *iv;
+    HashTable *attempts;
     FILE *card;
 } ATM;
 

@@ -8,6 +8,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "util/hash_table.h"
+#include "util/list.h"
 
 static const char BLOCK_SIZE = 16;
 static const char prompt[] = "ATM: ";
